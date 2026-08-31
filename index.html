@@ -10,53 +10,20 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <style>
-    :root { 
-      --bg: #f4f6f8; 
-      --card: #ffffff; 
-      --text: #1e293b; 
-      --muted: #64748b; 
-      --primary: #0f172a; 
-      --accent: #ff9800; 
-      --border: #e2e8f0; 
-      --success: #10b981; 
-      --danger: #ef4444; 
-      --sidebar-bg: #0f172a;
-      --sidebar-text: #94a3b8;
-      --sidebar-active: #ffffff;
-      --sidebar-active-bg: #1e293b;
-    }
-    
+    :root { --bg: #f0f2f5; --card: #ffffff; --text: #1e293b; --muted: #64748b; --primary: #0f172a; --accent: #ff9800; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 70px; }
     
-    /* Layout Wrappers */
-    .admin-layout { display: flex; flex-direction: column; min-height: 100vh; }
-    
-    /* Topbar (App Header) */
-    .topbar { background: var(--card); color: var(--text); height: 60px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-    .topbar h1 { margin: 0; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+    .app-header { background: var(--primary); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .app-header h1 { margin: 0; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     .live-dot { width: 10px; height: 10px; background: var(--success); border-radius: 50%; display: inline-block; box-shadow: 0 0 8px var(--success); }
     
-    .user-profile { background: var(--primary); color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; }
-
-    /* Unified Sidebar / Mobile Bottom Nav */
-    .sidebar { background: var(--card); position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-around; align-items: center; z-index: 1000; border-top: 1px solid var(--border); }
-    .sidebar-brand { display: none; }
+    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
     
-    .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); background: none; border: none; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.2s; padding: 5px; width: 100%; border-radius: 8px; }
-    .nav-item i { font-size: 1.25rem; margin-bottom: 4px; }
-    .nav-item.active { color: var(--accent); }
-
-    /* Main Content */
-    .main-wrapper { flex: 1; display: flex; flex-direction: column; padding-bottom: 75px; } /* padding for bottom nav */
-    .container { max-width: 900px; margin: 0 auto; padding: 20px; width: 100%; }
-    
-    /* View Transitions */
     .view { display: none; animation: fadeIn 0.3s ease; }
     .view.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Components (Cards, Stats, Forms) - Kept Same/Polished */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .stat-card { background: var(--card); border-radius: 16px; padding: 20px; text-align: center; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
     .stat-card i { font-size: 24px; color: var(--accent); margin-bottom: 8px; display: block; }
@@ -65,7 +32,7 @@
 
     .card { background: var(--card); padding: 24px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 24px; }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    h2 { font-size: 1.25rem; margin: 0; color: var(--primary); }
+    h2 { font-size: 1.25rem; margin: 0; }
 
     .input-group { margin-bottom: 16px; }
     .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
@@ -95,9 +62,8 @@
     .btn-edit { background: #e0f2fe; color: #0284c7; }
     .btn-delete { background: #fee2e2; color: #dc2626; }
 
-    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; background: #fff; transition: transform 0.2s; }
-    .list-item:hover { border-color: var(--accent); }
-    .item-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; background: #fff; }
+    .item-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
     .item-meta { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
     .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
     .badge.published, .badge.active { background: #dcfce7; color: #059669; }
@@ -105,492 +71,493 @@
     
     .status-msg { margin-top: 12px; text-align: center; font-weight: 600; color: var(--success); font-size: 0.9rem; }
 
-    /* Desktop Software UI Override */
+    .mobile-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
+    .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); background: none; border: none; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .nav-item i { font-size: 1.25rem; margin-bottom: 4px; }
+    .nav-item.active { color: var(--accent); }
+    
     @media (min-width: 768px) {
-      .admin-layout { flex-direction: row; height: 100vh; overflow: hidden; }
-      
-      .sidebar { position: static; width: 250px; height: 100vh; background: var(--sidebar-bg); flex-direction: column; justify-content: flex-start; align-items: flex-start; padding: 20px 0; border-top: none; box-shadow: none; flex-shrink: 0; }
-      .sidebar-brand { display: flex; color: white; font-size: 1.25rem; font-weight: 700; padding: 0 20px 20px; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; align-items: center; gap: 10px; }
-      
-      .nav-item { flex-direction: row; justify-content: flex-start; padding: 15px 25px; border-radius: 0; width: 100%; color: var(--sidebar-text); font-size: 0.95rem; }
-      .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
-      .nav-item i { margin-bottom: 0; margin-right: 15px; font-size: 1.2rem; width: 20px; text-align: center; }
-      .nav-item.active { background: var(--sidebar-active-bg); color: var(--sidebar-active); border-left: 4px solid var(--accent); }
-      
-      .main-wrapper { padding-bottom: 0; height: 100vh; overflow-y: auto; background: var(--bg); }
-      .topbar-brand-mobile { display: none; } /* Hide on desktop, shown in sidebar */
-      
-      .container { padding: 40px; }
+      .mobile-nav { display: none; }
+      body { padding-bottom: 0; }
+      .app-header { padding: 16px 40px; }
+      .desktop-tabs { display: flex; gap: 12px; }
+      .desktop-tabs .nav-item { flex-direction: row; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; }
+      .desktop-tabs .nav-item.active { background: var(--accent); color: white; }
+      .desktop-tabs .nav-item i { margin-bottom: 0; margin-right: 8px; font-size: 1rem; }
     }
   </style>
 </head>
 <body>
 
-<div class="admin-layout">
-
-  <!-- UNIFIED NAV: Acts as Sidebar on Desktop, Bottom Nav on Mobile -->
-  <nav class="sidebar">
-    <div class="sidebar-brand">
-      <span class="live-dot"></span> Vitthal Speaks
+  <header class="app-header">
+    <h1><span class="live-dot"></span> Vitthal Speaks Admin</h1>
+    <div class="desktop-tabs hidden md:flex">
+      <button class="nav-item active" onclick="switchView('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Dashboard</button>
+      <button class="nav-item" onclick="switchView('posts', this)"><i class="fa-solid fa-newspaper"></i> Posts</button>
+      <button class="nav-item" onclick="switchView('ads', this)"><i class="fa-solid fa-bullhorn"></i> Ads</button>
+      <button class="nav-item" onclick="switchView('html-upload', this)"><i class="fa-solid fa-file-code"></i> Upload HTML</button>
     </div>
-    
-    <button class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard', this)">
-      <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
-    </button>
-    <button class="nav-item" id="nav-posts" onclick="switchView('posts', this)">
-      <i class="fa-solid fa-newspaper"></i><span>Posts</span>
-    </button>
-    <button class="nav-item" id="nav-ads" onclick="switchView('ads', this)">
-      <i class="fa-solid fa-bullhorn"></i><span>Ads</span>
-    </button>
-    <button class="nav-item" id="nav-html" onclick="switchView('html-upload', this)">
-      <i class="fa-solid fa-file-code"></i><span>Upload</span>
-    </button>
-  </nav>
+  </header>
 
-  <!-- MAIN CONTENT AREA -->
-  <div class="main-wrapper">
+  <div class="container">
     
-    <!-- TOPBAR -->
-    <header class="topbar">
-      <h1 class="topbar-brand-mobile"><span class="live-dot"></span> Admin App</h1>
-      <div style="flex:1;"></div>
-      <div class="user-profile">VS</div>
-    </header>
-
-    <div class="container">
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboard" class="view active">
+      <h2>Workspace Overview</h2>
+      <p style="color:var(--muted); font-size:0.9rem; margin-top:4px; margin-bottom:24px;">Real-time analytics directly from Supabase.</p>
       
-      <!-- DASHBOARD VIEW -->
-      <div id="dashboard" class="view active">
-        <h2>Workspace Overview</h2>
-        <p style="color:var(--muted); font-size:0.9rem; margin-top:4px; margin-bottom:24px;">Real-time analytics directly from Supabase.</p>
+      <div class="stats-grid">
+        <div class="stat-card"><i class="fa-solid fa-newspaper"></i><h3 id="stat-posts">0</h3><p>Total Posts</p></div>
+        <div class="stat-card"><i class="fa-solid fa-eye"></i><h3 id="stat-views">0</h3><p>Blog Views</p></div>
+        <div class="stat-card"><i class="fa-solid fa-bullhorn"></i><h3 id="stat-ads">0</h3><p>Active Ads</p></div>
+        <div class="stat-card"><i class="fa-solid fa-hand-pointer"></i><h3 id="stat-clicks">0</h3><p>Ad Clicks</p></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Recent Activity</h2>
+          <button class="btn btn-accent btn-icon" onclick="switchView('posts', document.getElementById('nav-posts'))">+ New Post</button>
+        </div>
+        <div id="recent-list">Loading...</div>
+      </div>
+    </div>
+
+    <!-- POSTS MANAGEMENT VIEW -->
+    <div id="posts" class="view">
+      <div class="card">
+        <div class="card-header">
+          <h2 id="blog-form-title">Create/Edit Article</h2>
+          <button class="btn btn-icon" onclick="resetBlogForm()" style="background:#f1f5f9; color:#0f172a;"><i class="fa-solid fa-rotate-right"></i> Reset</button>
+        </div>
+        <input type="hidden" id="edit-blog-id">
+        <div class="input-group"><label>Title (Marathi)</label><input type="text" id="blog-title" placeholder="Enter post title" required></div>
         
-        <div class="stats-grid">
-          <div class="stat-card"><i class="fa-solid fa-newspaper"></i><h3 id="stat-posts">0</h3><p>Total Posts</p></div>
-          <div class="stat-card"><i class="fa-solid fa-eye"></i><h3 id="stat-views">0</h3><p>Blog Views</p></div>
-          <div class="stat-card"><i class="fa-solid fa-bullhorn"></i><h3 id="stat-ads">0</h3><p>Active Ads</p></div>
-          <div class="stat-card"><i class="fa-solid fa-hand-pointer"></i><h3 id="stat-clicks">0</h3><p>Ad Clicks</p></div>
+        <!-- NEW FIELD: English Title -->
+        <div class="input-group"><label>English Title (Used for English Search keywords & Auto-Slug)</label><input type="text" id="blog-title-en" placeholder="e.g. MPSC Hall Ticket Update 2026"></div>
+        
+        <!-- STRICT SLUG FIELD -->
+        <div class="input-group"><label>Custom URL Slug (Optional - Letters & hyphens only!)</label><input type="text" id="blog-slug" placeholder="e.g. mpsc-hall-ticket"></div>
+        
+        <div class="input-group"><label>Short Excerpt</label><input type="text" id="blog-excerpt" placeholder="A brief summary for the preview card" required></div>
+        <div class="input-group">
+          <label>Post Status</label>
+          <select id="blog-status">
+            <option value="published">🟢 Published (Live on site)</option>
+            <option value="draft">🟡 Draft (Hidden from public)</option>
+          </select>
         </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h2>Recent Activity</h2>
-            <button class="btn btn-accent btn-icon" onclick="switchView('posts', document.getElementById('nav-posts'))">+ New Post</button>
-          </div>
-          <div id="recent-list">Loading...</div>
-        </div>
+        <div class="input-group"><label>HTML Content</label><textarea id="blog-content" rows="10" placeholder="<p>Write your HTML content here...</p>" required></textarea></div>
+        <button class="btn btn-primary" onclick="savePost()"><i class="fa-solid fa-cloud-arrow-up"></i> Save Post to Database</button>
+        <div id="blog-status-msg" class="status-msg"></div>
       </div>
+      <div class="card"><h2>All Posts</h2><div id="blogs-list" style="margin-top:16px;">Loading...</div></div>
+    </div>
 
-      <!-- POSTS MANAGEMENT VIEW -->
-      <div id="posts" class="view">
-        <div class="card">
-          <div class="card-header">
-            <h2 id="blog-form-title">Create/Edit Article</h2>
-            <button class="btn btn-icon" onclick="resetBlogForm()" style="background:#f1f5f9; color:#0f172a;"><i class="fa-solid fa-rotate-right"></i> Reset</button>
-          </div>
-          <input type="hidden" id="edit-blog-id">
-          <div class="input-group"><label>Title (Marathi or English)</label><input type="text" id="blog-title" placeholder="Enter post title" required></div>
-          
-          <div class="input-group"><label>URL Slug (Optional - Use English for cleaner links)</label><input type="text" id="blog-slug" placeholder="e.g. ladki-bahin-yojana"></div>
-          
-          <div class="input-group"><label>Short Excerpt</label><input type="text" id="blog-excerpt" placeholder="A brief summary for the preview card" required></div>
-          <div class="input-group">
-            <label>Post Status</label>
-            <select id="blog-status">
-              <option value="published">🟢 Published (Live on site)</option>
-              <option value="draft">🟡 Draft (Hidden from public)</option>
-            </select>
-          </div>
-          <div class="input-group"><label>HTML Content</label><textarea id="blog-content" rows="10" placeholder="<p>Write your HTML content here...</p>" required></textarea></div>
-          <button class="btn btn-primary" onclick="savePost()"><i class="fa-solid fa-cloud-arrow-up"></i> Save Post to Database</button>
-          <div id="blog-status-msg" class="status-msg"></div>
+    <!-- HTML UPLOAD VIEW -->
+    <div id="html-upload" class="view">
+      <div class="card">
+        <h2>Upload Article via HTML File</h2>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 24px;">Upload a pre-written .html file. The system will automatically extract the body and publish it.</p>
+        
+        <div class="input-group"><label>Post Title (Marathi)</label><input type="text" id="upload-title" placeholder="Enter article title" required></div>
+        
+        <!-- NEW FIELD: English Title -->
+        <div class="input-group"><label>English Title (Used for English Search keywords & Auto-Slug)</label><input type="text" id="upload-title-en" placeholder="e.g. Ladki Bahin Yojana Apply Online"></div>
+        
+        <!-- STRICT SLUG FIELD -->
+        <div class="input-group"><label>Custom URL Slug (Optional - Letters & hyphens only!)</label><input type="text" id="upload-slug" placeholder="e.g. ladki-bahin-yojana"></div>
+        
+        <div class="input-group"><label>Short Excerpt</label><input type="text" id="upload-excerpt" placeholder="Short description"></div>
+        <div class="input-group">
+          <label>Post Status</label>
+          <select id="upload-status">
+            <option value="published">🟢 Published</option>
+            <option value="draft">🟡 Draft</option>
+          </select>
         </div>
-        <div class="card"><h2>All Posts</h2><div id="blogs-list" style="margin-top:16px;">Loading...</div></div>
-      </div>
-
-      <!-- HTML UPLOAD VIEW -->
-      <div id="html-upload" class="view">
-        <div class="card">
-          <h2>Upload Article via HTML File</h2>
-          <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 24px;">Upload a pre-written .html file. The system will automatically extract the body and publish it.</p>
-          
-          <div class="input-group"><label>Post Title (Marathi or English)</label><input type="text" id="upload-title" placeholder="Enter article title"></div>
-          
-          <div class="input-group"><label>URL Slug (Optional - Use English for cleaner links)</label><input type="text" id="upload-slug" placeholder="e.g. mpsc-hall-ticket-2026"></div>
-          
-          <div class="input-group"><label>Short Excerpt</label><input type="text" id="upload-excerpt" placeholder="Short description"></div>
-          <div class="input-group">
-            <label>Post Status</label>
-            <select id="upload-status">
-              <option value="published">🟢 Published</option>
-              <option value="draft">🟡 Draft</option>
-            </select>
-          </div>
-          <div class="input-group">
-            <label>Select .html File</label>
-            <input type="file" id="html-file-input" accept=".html" style="padding: 10px; background: white;">
-          </div>
-          <button class="btn btn-primary" onclick="uploadHtmlFile()"><i class="fa-solid fa-upload"></i> Upload and Save</button>
-          <div id="upload-status-msg" class="status-msg"></div>
+        <div class="input-group">
+          <label>Select .html File</label>
+          <input type="file" id="html-file-input" accept=".html" style="padding: 10px; background: white;">
         </div>
+        <button class="btn btn-primary" onclick="uploadHtmlFile()"><i class="fa-solid fa-upload"></i> Upload and Save</button>
+        <div id="upload-status-msg" class="status-msg"></div>
       </div>
+    </div>
 
-      <!-- ADS MANAGEMENT VIEW -->
-      <div id="ads" class="view">
-        <div class="card">
-          <div class="card-header">
-            <h2 id="ad-form-title">Create Ad Campaign</h2>
-            <button class="btn btn-icon" onclick="resetAdForm()" style="background:#f1f5f9; color:#0f172a;"><i class="fa-solid fa-rotate-right"></i> Reset</button>
-          </div>
-          <input type="hidden" id="edit-ad-id">
-          <div class="input-group"><label>Campaign Name</label><input type="text" id="ad-title" placeholder="e.g. Amazon Summer Sale" required></div>
-          <div style="display: flex; gap: 16px;">
-            <div class="input-group" style="flex: 1;"><label>Ad Status</label><select id="ad-status"><option value="active">🟢 Active</option><option value="paused">🟡 Paused</option></select></div>
-            <div class="input-group" style="flex: 1;"><label>Media Type</label><select id="ad-media-type" onchange="toggleMediaUI()"><option value="image">🖼️ Image Banner</option><option value="youtube">📺 YouTube Video</option></select></div>
-          </div>
-          <div class="input-group"><label>Destination URL</label><input type="url" id="ad-target" placeholder="Where should they go when they click?"></div>
-          
-          <div class="input-group" id="media-ui-image">
-            <label>Upload Ad Image</label>
-            <div class="upload-box" onclick="document.getElementById('ad-img-upload').click()">
-              <i class="fa-solid fa-cloud-arrow-up"></i><p>Click to Upload via ImageBB</p>
-            </div>
-            <input type="file" id="ad-img-upload" accept="image/*" style="display:none;" onchange="handleAdImageUpload(event)">
-            <img id="ad-img-preview" class="img-preview">
-            <input type="hidden" id="ad-media-url-hidden">
-          </div>
-          
-          <div class="input-group" id="media-ui-youtube" style="display: none;">
-            <label>YouTube Video Link</label>
-            <input type="text" id="ad-youtube-url" placeholder="https://www.youtube.com/watch?v=...">
-          </div>
-          
-          <div class="input-group" style="margin-top:24px; border-top: 1px solid var(--border); padding-top: 16px;">
-            <label>Targeting Rule</label>
-            <select id="ad-display-rule" onchange="toggleAdTargeting()">
-              <option value="all">🌐 Show Everywhere (Home + All Posts)</option>
-              <option value="home_only">🏠 Home Page Only</option>
-              <option value="specific_posts">🎯 Specific Posts Only</option>
-              <option value="home_and_specific_posts">🏠🎯 Home + Specific Posts</option>
-            </select>
-          </div>
-
-          <div class="input-group" id="target-posts-container" style="display: none;">
-            <label>Select Target Posts</label>
-            <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="post-target-search" placeholder="Search posts..." oninput="filterAdTargetCheckboxes()"></div>
-            <div class="checkbox-list" id="ad-posts-checkboxes">Loading posts...</div>
-          </div>
-
-          <button class="btn btn-primary" onclick="saveAd()"><i class="fa-solid fa-bullhorn"></i> Save Ad Campaign</button>
-          <div id="ad-status-msg" class="status-msg"></div>
+    <!-- ADS MANAGEMENT VIEW -->
+    <div id="ads" class="view">
+      <div class="card">
+        <div class="card-header">
+          <h2 id="ad-form-title">Create Ad Campaign</h2>
+          <button class="btn btn-icon" onclick="resetAdForm()" style="background:#f1f5f9; color:#0f172a;"><i class="fa-solid fa-rotate-right"></i> Reset</button>
         </div>
-        <div class="card"><h2>Ad Campaigns</h2><div id="ads-list" style="margin-top:16px;">Loading...</div></div>
+        <input type="hidden" id="edit-ad-id">
+        <div class="input-group"><label>Campaign Name</label><input type="text" id="ad-title" placeholder="e.g. Amazon Summer Sale" required></div>
+        <div style="display: flex; gap: 16px;">
+          <div class="input-group" style="flex: 1;"><label>Ad Status</label><select id="ad-status"><option value="active">🟢 Active</option><option value="paused">🟡 Paused</option></select></div>
+          <div class="input-group" style="flex: 1;"><label>Media Type</label><select id="ad-media-type" onchange="toggleMediaUI()"><option value="image">🖼️ Image Banner</option><option value="youtube">📺 YouTube Video</option></select></div>
+        </div>
+        <div class="input-group"><label>Destination URL</label><input type="url" id="ad-target" placeholder="Where should they go when they click?"></div>
+        
+        <div class="input-group" id="media-ui-image">
+          <label>Upload Ad Image</label>
+          <div class="upload-box" onclick="document.getElementById('ad-img-upload').click()">
+            <i class="fa-solid fa-cloud-arrow-up"></i><p>Click to Upload via ImageBB</p>
+          </div>
+          <input type="file" id="ad-img-upload" accept="image/*" style="display:none;" onchange="handleAdImageUpload(event)">
+          <img id="ad-img-preview" class="img-preview">
+          <input type="hidden" id="ad-media-url-hidden">
+        </div>
+        
+        <div class="input-group" id="media-ui-youtube" style="display: none;">
+          <label>YouTube Video Link</label>
+          <input type="text" id="ad-youtube-url" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+        
+        <div class="input-group" style="margin-top:24px; border-top: 1px solid var(--border); padding-top: 16px;">
+          <label>Targeting Rule</label>
+          <select id="ad-display-rule" onchange="toggleAdTargeting()">
+            <option value="all">🌐 Show Everywhere (Home + All Posts)</option>
+            <option value="home_only">🏠 Home Page Only</option>
+            <option value="specific_posts">🎯 Specific Posts Only</option>
+            <option value="home_and_specific_posts">🏠🎯 Home + Specific Posts</option>
+          </select>
+        </div>
+
+        <div class="input-group" id="target-posts-container" style="display: none;">
+          <label>Select Target Posts</label>
+          <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="post-target-search" placeholder="Search posts..." oninput="filterAdTargetCheckboxes()"></div>
+          <div class="checkbox-list" id="ad-posts-checkboxes">Loading posts...</div>
+        </div>
+
+        <button class="btn btn-primary" onclick="saveAd()"><i class="fa-solid fa-bullhorn"></i> Save Ad Campaign</button>
+        <div id="ad-status-msg" class="status-msg"></div>
       </div>
+      <div class="card"><h2>Ad Campaigns</h2><div id="ads-list" style="margin-top:16px;">Loading...</div></div>
     </div>
   </div>
-</div>
 
-<script>
-  const SUPABASE_URL = 'https://ediqthdjnsrorcktldiu.supabase.co';
-  const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkaXF0aGRqbnNyb3Jja3RsZGl1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MzEzNCwiZXhwIjoyMTAzMjE5MTM0fQ.-Isla9gq9HWFr4G5ljrLthLZ0EVhAjAEf5OKdvkJhXI'; 
-  const IMAGEBB_API_KEY = '7619c34619679622fd77850f77e13606'; 
+  <nav class="mobile-nav">
+    <button class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard', this)"><i class="fa-solid fa-chart-pie"></i>Home</button>
+    <button class="nav-item" id="nav-posts" onclick="switchView('posts', this)"><i class="fa-solid fa-newspaper"></i>Posts</button>
+    <button class="nav-item" id="nav-html" onclick="switchView('html-upload', this)"><i class="fa-solid fa-file-code"></i>Upload</button>
+    <button class="nav-item" id="nav-ads" onclick="switchView('ads', this)"><i class="fa-solid fa-bullhorn"></i>Ads</button>
+  </nav>
 
-  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-  let allPostsData = []; 
+  <script>
+    const SUPABASE_URL = 'https://ediqthdjnsrorcktldiu.supabase.co';
+    const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MzEzNCwiZXhwIjoyMTAzMjE5MTM0fQ.-Isla9gq9HWFr4G5ljrLthLZ0EVhAjAEf5OKdvkJhXI'; 
+    const IMAGEBB_API_KEY = 'd10d18086208ee4f37803a63f7331904'; 
 
-  function switchView(viewId, btn) {
-    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
-    if(btn) btn.classList.add('active');
-    window.scrollTo(0, 0);
-    if(viewId === 'dashboard') loadDashboardStats();
-  }
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    let allPostsData = []; 
 
-  async function loadDashboardStats() {
-    const { data: posts } = await db.from('blogs').select('id, title, views, status, created_at');
-    const { data: ads } = await db.from('ads').select('id, campaign_name, status, views, clicks');
-    
-    if(posts) {
-      allPostsData = posts.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-      document.getElementById('stat-posts').innerText = posts.length;
-      document.getElementById('stat-views').innerText = posts.reduce((sum, p) => sum + (p.views || 0), 0);
-      document.getElementById('recent-list').innerHTML = allPostsData.slice(0,4).map(p => `
-        <div style="padding: 12px 0; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between;">
-          <div><strong style="font-size:0.9rem; color:var(--primary);">📝 ${p.title}</strong></div>
-          <span class="badge ${p.status || 'draft'}">${p.status || 'draft'}</span>
-        </div>
-      `).join('');
-      populateAdTargetingCheckboxes(); 
-    }
-    if(ads) {
-      document.getElementById('stat-ads').innerText = ads.filter(a => a.status === 'active').length;
-      document.getElementById('stat-clicks').innerText = ads.reduce((sum, a) => sum + (a.clicks || 0), 0);
-    }
-  }
-
-  // --- BLOG FORM LOGIC ---
-  function resetBlogForm() {
-    document.getElementById('edit-blog-id').value = '';
-    document.getElementById('blog-title').value = '';
-    document.getElementById('blog-slug').value = '';
-    document.getElementById('blog-excerpt').value = '';
-    document.getElementById('blog-content').value = '';
-    document.getElementById('blog-status').value = 'published';
-    document.getElementById('blog-form-title').innerText = 'Create Article';
-  }
-
-  async function editBlog(id) {
-    const { data: post } = await db.from('blogs').select('*').eq('id', id).single();
-    if(!post) return;
-    document.getElementById('edit-blog-id').value = post.id;
-    document.getElementById('blog-title').value = post.title;
-    document.getElementById('blog-slug').value = post.slug || '';
-    document.getElementById('blog-excerpt').value = post.excerpt || '';
-    document.getElementById('blog-content').value = post.content || '';
-    document.getElementById('blog-status').value = post.status || 'published';
-    document.getElementById('blog-form-title').innerText = 'Edit Article: ' + post.title;
-    switchView('posts', document.getElementById('nav-posts'));
-  }
-
-  async function savePost() {
-    const id = document.getElementById('edit-blog-id').value;
-    const title = document.getElementById('blog-title').value;
-    const customSlug = document.getElementById('blog-slug').value.trim();
-    const excerpt = document.getElementById('blog-excerpt').value;
-    const content = document.getElementById('blog-content').value;
-    const status = document.getElementById('blog-status').value;
-    const statusMsg = document.getElementById('blog-status-msg');
-
-    if (!title || !content) return alert('Title and Content required!');
-    statusMsg.innerText = "Saving to database...";
-    
-    // Advanced Slug Generation (Respects Custom Input, Falls back to Marathi/English string)
-    let slug = customSlug;
-    if (!slug) {
-      slug = title.trim().replace(/\s+/g, '-').replace(/[^\w\u0900-\u097F-]+/g, '').toLowerCase();
-    }
-    if (!slug) slug = 'post-' + Date.now(); // Ultimate fallback
-
-    const payload = { title, slug, excerpt, content, status, updated_at: new Date().toISOString() };
-
-    let error;
-    if (id) {
-      ({ error } = await db.from('blogs').update(payload).eq('id', id));
-    } else {
-      payload.created_at = new Date().toISOString();
-      payload.views = 0;
-      ({ error } = await db.from('blogs').insert([payload]));
+    function switchView(viewId, btn) {
+      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      if(btn) btn.classList.add('active');
+      window.scrollTo(0, 0);
+      if(viewId === 'dashboard') loadDashboardStats();
     }
 
-    if (error) return alert(error.message);
-    statusMsg.innerText = "Saved successfully!";
-    resetBlogForm(); loadBlogs(); loadDashboardStats();
-    setTimeout(() => statusMsg.innerText = "", 3000);
-  }
-
-  // --- HTML UPLOAD LOGIC ---
-  async function uploadHtmlFile() {
-    const title = document.getElementById('upload-title').value;
-    const customSlug = document.getElementById('upload-slug').value.trim();
-    const excerpt = document.getElementById('upload-excerpt').value;
-    const status = document.getElementById('upload-status').value;
-    const fileInput = document.getElementById('html-file-input');
-    const statusMsg = document.getElementById('upload-status-msg');
-
-    if (!title || !fileInput.files[0]) return alert('Please enter a title and select an HTML file!');
-
-    statusMsg.innerText = "Reading file...";
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-
-    reader.onload = async function(e) {
-      let content = e.target.result;
+    async function loadDashboardStats() {
+      const { data: posts } = await db.from('blogs').select('id, title, views, status, created_at');
+      const { data: ads } = await db.from('ads').select('id, campaign_name, status, views, clicks');
       
-      // Extract ONLY the body to prevent nested <html> tags breaking downloads
-      const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      if (bodyMatch) content = bodyMatch[1];
-
-      // Slug Logic
-      let slug = customSlug;
-      if (!slug) {
-        slug = title.trim().replace(/\s+/g, '-').replace(/[^\w\u0900-\u097F-]+/g, '').toLowerCase();
+      if(posts) {
+        allPostsData = posts.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+        document.getElementById('stat-posts').innerText = posts.length;
+        document.getElementById('stat-views').innerText = posts.reduce((sum, p) => sum + (p.views || 0), 0);
+        document.getElementById('recent-list').innerHTML = allPostsData.slice(0,4).map(p => `
+          <div style="padding: 12px 0; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between;">
+            <div><strong style="font-size:0.9rem;">📝 ${p.title}</strong></div>
+            <span class="badge ${p.status || 'draft'}">${p.status || 'draft'}</span>
+          </div>
+        `).join('');
+        populateAdTargetingCheckboxes(); 
       }
+      if(ads) {
+        document.getElementById('stat-ads').innerText = ads.filter(a => a.status === 'active').length;
+        document.getElementById('stat-clicks').innerText = ads.reduce((sum, a) => sum + (a.clicks || 0), 0);
+      }
+    }
+
+    // --- BLOG FORM LOGIC ---
+    function resetBlogForm() {
+      document.getElementById('edit-blog-id').value = '';
+      document.getElementById('blog-title').value = '';
+      document.getElementById('blog-title-en').value = '';
+      document.getElementById('blog-slug').value = '';
+      document.getElementById('blog-excerpt').value = '';
+      document.getElementById('blog-content').value = '';
+      document.getElementById('blog-status').value = 'published';
+      document.getElementById('blog-form-title').innerText = 'Create Article';
+    }
+
+    async function editBlog(id) {
+      const { data: post } = await db.from('blogs').select('*').eq('id', id).single();
+      if(!post) return;
+      document.getElementById('edit-blog-id').value = post.id;
+      document.getElementById('blog-title').value = post.title;
+      document.getElementById('blog-title-en').value = post.title_en || '';
+      document.getElementById('blog-slug').value = post.slug || '';
+      document.getElementById('blog-excerpt').value = post.excerpt || '';
+      document.getElementById('blog-content').value = post.content || '';
+      document.getElementById('blog-status').value = post.status || 'published';
+      document.getElementById('blog-form-title').innerText = 'Edit Article: ' + post.title;
+      switchView('posts', document.getElementById('nav-posts'));
+    }
+
+    async function savePost() {
+      const id = document.getElementById('edit-blog-id').value;
+      const title = document.getElementById('blog-title').value;
+      const title_en = document.getElementById('blog-title-en').value;
+      const customSlug = document.getElementById('blog-slug').value;
+      const excerpt = document.getElementById('blog-excerpt').value;
+      const content = document.getElementById('blog-content').value;
+      const status = document.getElementById('blog-status').value;
+      const statusMsg = document.getElementById('blog-status-msg');
+
+      if (!title || !content) return alert('Marathi Title and Content required!');
+      statusMsg.innerText = "Saving to database...";
+      
+      // STRICT ENGLISH SLUG GENERATION
+      let rawSlug = customSlug || title_en || title;
+      let slug = rawSlug.trim()
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/[^a-zA-Z0-9-]/g, '') // RESTRICT TO ENGLISH ALPHABET & NUMBERS ONLY
+        .replace(/-+/g, '-') // Prevent double hyphens
+        .replace(/^-|-$/g, '') // Trim hyphens from start/end
+        .toLowerCase();
+        
       if (!slug) slug = 'post-' + Date.now();
 
-      statusMsg.innerText = "Uploading to database...";
-      const payload = { title, slug, excerpt: excerpt || title, content, status, views: 0, created_at: new Date().toISOString() };
+      const payload = { title, title_en, slug, excerpt, content, status, updated_at: new Date().toISOString() };
 
-      const { error } = await db.from('blogs').insert([payload]);
+      let error;
+      if (id) {
+        ({ error } = await db.from('blogs').update(payload).eq('id', id));
+      } else {
+        payload.created_at = new Date().toISOString();
+        payload.views = 0;
+        ({ error } = await db.from('blogs').insert([payload]));
+      }
+
       if (error) return alert(error.message);
-
-      statusMsg.innerText = "Published successfully!";
-      document.getElementById('upload-title').value = '';
-      document.getElementById('upload-slug').value = '';
-      document.getElementById('upload-excerpt').value = '';
-      fileInput.value = '';
-      loadBlogs(); loadDashboardStats();
-      setTimeout(() => statusMsg.innerText = "", 4000);
-    };
-    reader.readAsText(file);
-  }
-
-  async function loadBlogs() {
-    const { data } = await db.from('blogs').select('id, title, slug, views, status').order('created_at', { ascending: false });
-    if(!data) return;
-    document.getElementById('blogs-list').innerHTML = data.map(post => `
-      <div class="list-item">
-        <div>
-          <div class="item-title"><span class="badge ${post.status || 'draft'}">${post.status || 'draft'}</span> ${post.title}</div>
-          <div class="item-meta">/${post.slug} • Views: ${post.views || 0}</div>
-        </div>
-        <div>
-          <button class="btn btn-icon btn-edit" onclick="editBlog(${post.id})"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-icon btn-delete" onclick="deleteBlog(${post.id})"><i class="fa-solid fa-trash"></i></button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  async function deleteBlog(id) {
-    if(confirm("Delete this post permanently?")) { await db.from('blogs').delete().eq('id', id); loadBlogs(); loadDashboardStats(); }
-  }
-
-  // --- ADS LOGIC ---
-  function toggleMediaUI() {
-    const type = document.getElementById('ad-media-type').value;
-    document.getElementById('media-ui-image').style.display = type === 'image' ? 'block' : 'none';
-    document.getElementById('media-ui-youtube').style.display = type === 'youtube' ? 'block' : 'none';
-  }
-  function toggleAdTargeting() {
-    const rule = document.getElementById('ad-display-rule').value;
-    document.getElementById('target-posts-container').style.display = rule.includes('specific_posts') ? 'block' : 'none';
-  }
-  function populateAdTargetingCheckboxes() { renderAdCheckboxes(allPostsData); }
-  function filterAdTargetCheckboxes() {
-    const q = document.getElementById('post-target-search').value.toLowerCase();
-    renderAdCheckboxes(allPostsData.filter(p => p.title.toLowerCase().includes(q)));
-  }
-  function renderAdCheckboxes(postsList) {
-    const container = document.getElementById('ad-posts-checkboxes');
-    if(postsList.length === 0) return container.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:8px;">No posts found.</div>';
-    const checkedIds = Array.from(document.querySelectorAll('input[name="ad_target_posts"]:checked')).map(cb => cb.value);
-    container.innerHTML = postsList.map(post => `
-      <label class="checkbox-item"><input type="checkbox" name="ad_target_posts" value="${post.id}" ${checkedIds.includes(String(post.id)) ? 'checked' : ''}>${post.title}</label>
-    `).join('');
-  }
-
-  async function handleAdImageUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    document.getElementById('ad-status-msg').innerText = "Uploading to ImageBB...";
-    const formData = new FormData(); formData.append('image', file);
-    try {
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
-      const data = await res.json();
-      if (data && data.success) {
-        document.getElementById('ad-media-url-hidden').value = data.data.url;
-        document.getElementById('ad-img-preview').src = data.data.url;
-        document.getElementById('ad-img-preview').style.display = 'block';
-        document.getElementById('ad-status-msg').innerText = "Image Uploaded!";
-        setTimeout(() => document.getElementById('ad-status-msg').innerText = "", 2000);
-      } else { throw new Error('Upload failed'); }
-    } catch (err) { alert('Image upload failed'); document.getElementById('ad-status-msg').innerText = ""; }
-    e.target.value = '';
-  }
-
-  function resetAdForm() {
-    document.getElementById('edit-ad-id').value = '';
-    document.getElementById('ad-title').value = '';
-    document.getElementById('ad-target').value = '';
-    document.getElementById('ad-media-type').value = 'image';
-    document.getElementById('ad-status').value = 'active';
-    document.getElementById('ad-display-rule').value = 'all';
-    document.getElementById('ad-youtube-url').value = '';
-    document.getElementById('ad-media-url-hidden').value = '';
-    document.getElementById('ad-img-preview').style.display = 'none';
-    document.getElementById('ad-form-title').innerText = 'Create Ad Campaign';
-    document.querySelectorAll('input[name="ad_target_posts"]').forEach(cb => cb.checked = false);
-    toggleMediaUI(); toggleAdTargeting();
-  }
-
-  async function editAd(id) {
-    const { data } = await db.from('ads').select('*').eq('id', id).single();
-    if(!data) return;
-    resetAdForm();
-    document.getElementById('edit-ad-id').value = data.id;
-    document.getElementById('ad-title').value = data.campaign_name || data.title || '';
-    document.getElementById('ad-target').value = data.destination_url || data.target_url || '';
-    document.getElementById('ad-status').value = data.status || 'active';
-    document.getElementById('ad-media-type').value = data.media_type || 'image';
-    document.getElementById('ad-display-rule').value = data.display_rule || 'all';
-    document.getElementById('ad-form-title').innerText = 'Edit Campaign: ' + (data.campaign_name || data.title);
-    
-    toggleMediaUI();
-    if(data.media_type === 'youtube') document.getElementById('ad-youtube-url').value = data.media_url || '';
-    else {
-      document.getElementById('ad-media-url-hidden').value = data.media_url || '';
-      if(data.media_url) { document.getElementById('ad-img-preview').src = data.media_url; document.getElementById('ad-img-preview').style.display = 'block'; }
+      statusMsg.innerText = "Saved successfully!";
+      resetBlogForm(); loadBlogs(); loadDashboardStats();
+      setTimeout(() => statusMsg.innerText = "", 3000);
     }
 
-    toggleAdTargeting();
-    if(data.target_post_ids && Array.isArray(data.target_post_ids)) {
-      document.querySelectorAll('input[name="ad_target_posts"]').forEach(cb => { cb.checked = data.target_post_ids.includes(parseInt(cb.value)); });
+    // --- HTML UPLOAD LOGIC ---
+    async function uploadHtmlFile() {
+      const title = document.getElementById('upload-title').value;
+      const title_en = document.getElementById('upload-title-en').value;
+      const customSlug = document.getElementById('upload-slug').value;
+      const excerpt = document.getElementById('upload-excerpt').value;
+      const status = document.getElementById('upload-status').value;
+      const fileInput = document.getElementById('html-file-input');
+      const statusMsg = document.getElementById('upload-status-msg');
+
+      if (!title || !fileInput.files[0]) return alert('Please enter a Marathi title and select an HTML file!');
+
+      statusMsg.innerText = "Reading file...";
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async function(e) {
+        let content = e.target.result;
+        
+        // Extract body
+        const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (bodyMatch) content = bodyMatch[1];
+
+        // STRICT ENGLISH SLUG GENERATION
+        let rawSlug = customSlug || title_en || title;
+        let slug = rawSlug.trim()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-zA-Z0-9-]/g, '')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '')
+          .toLowerCase();
+          
+        if (!slug) slug = 'post-' + Date.now();
+
+        statusMsg.innerText = "Uploading to database...";
+        const payload = { title, title_en, slug, excerpt: excerpt || title, content, status, views: 0, created_at: new Date().toISOString() };
+
+        const { error } = await db.from('blogs').insert([payload]);
+        if (error) return alert(error.message);
+
+        statusMsg.innerText = "Published successfully!";
+        document.getElementById('upload-title').value = '';
+        document.getElementById('upload-title-en').value = '';
+        document.getElementById('upload-slug').value = '';
+        document.getElementById('upload-excerpt').value = '';
+        fileInput.value = '';
+        loadBlogs(); loadDashboardStats();
+        setTimeout(() => statusMsg.innerText = "", 4000);
+      };
+      reader.readAsText(file);
     }
-    switchView('ads', document.getElementById('nav-ads'));
-  }
 
-  async function saveAd() {
-    const id = document.getElementById('edit-ad-id').value;
-    const title = document.getElementById('ad-title').value;
-    const destUrl = document.getElementById('ad-target').value;
-    const mediaType = document.getElementById('ad-media-type').value;
-    const status = document.getElementById('ad-status').value;
-    const displayRule = document.getElementById('ad-display-rule').value;
-    const mediaUrl = mediaType === 'youtube' ? document.getElementById('ad-youtube-url').value : document.getElementById('ad-media-url-hidden').value;
-
-    if (!title || !mediaUrl) return alert('Campaign Name and Media are required!');
-
-    let target_post_ids = [];
-    if(displayRule.includes('specific_posts')) {
-      document.querySelectorAll('input[name="ad_target_posts"]:checked').forEach(cb => target_post_ids.push(parseInt(cb.value)));
+    async function loadBlogs() {
+      const { data } = await db.from('blogs').select('id, title, slug, views, status').order('created_at', { ascending: false });
+      if(!data) return;
+      document.getElementById('blogs-list').innerHTML = data.map(post => `
+        <div class="list-item">
+          <div>
+            <div class="item-title"><span class="badge ${post.status || 'draft'}">${post.status || 'draft'}</span> ${post.title}</div>
+            <div class="item-meta">/${post.slug} • Views: ${post.views || 0}</div>
+          </div>
+          <div>
+            <button class="btn btn-icon btn-edit" onclick="editBlog(${post.id})"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn btn-icon btn-delete" onclick="deleteBlog(${post.id})"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      `).join('');
     }
 
-    const payload = { campaign_name: title, title: title, destination_url: destUrl, target_url: destUrl, media_type: mediaType, media_url: mediaUrl, status, display_rule: displayRule, target_post_ids };
-    document.getElementById('ad-status-msg').innerText = "Saving Ad...";
+    async function deleteBlog(id) {
+      if(confirm("Delete this post permanently?")) { await db.from('blogs').delete().eq('id', id); loadBlogs(); loadDashboardStats(); }
+    }
 
-    let error;
-    if(id) ({ error } = await db.from('ads').update(payload).eq('id', id));
-    else { payload.created_at = new Date().toISOString(); payload.views = 0; payload.clicks = 0; ({ error } = await db.from('ads').insert([payload])); }
+    // --- ADS LOGIC ---
+    function toggleMediaUI() {
+      const type = document.getElementById('ad-media-type').value;
+      document.getElementById('media-ui-image').style.display = type === 'image' ? 'block' : 'none';
+      document.getElementById('media-ui-youtube').style.display = type === 'youtube' ? 'block' : 'none';
+    }
+    function toggleAdTargeting() {
+      const rule = document.getElementById('ad-display-rule').value;
+      document.getElementById('target-posts-container').style.display = rule.includes('specific_posts') ? 'block' : 'none';
+    }
+    function populateAdTargetingCheckboxes() { renderAdCheckboxes(allPostsData); }
+    function filterAdTargetCheckboxes() {
+      const q = document.getElementById('post-target-search').value.toLowerCase();
+      renderAdCheckboxes(allPostsData.filter(p => p.title.toLowerCase().includes(q)));
+    }
+    function renderAdCheckboxes(postsList) {
+      const container = document.getElementById('ad-posts-checkboxes');
+      if(postsList.length === 0) return container.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:8px;">No posts found.</div>';
+      const checkedIds = Array.from(document.querySelectorAll('input[name="ad_target_posts"]:checked')).map(cb => cb.value);
+      container.innerHTML = postsList.map(post => `
+        <label class="checkbox-item"><input type="checkbox" name="ad_target_posts" value="${post.id}" ${checkedIds.includes(String(post.id)) ? 'checked' : ''}>${post.title}</label>
+      `).join('');
+    }
 
-    if (error) return alert(error.message);
-    document.getElementById('ad-status-msg').innerText = "Ad Campaign saved!";
-    resetAdForm(); loadAds(); loadDashboardStats();
-    setTimeout(() => document.getElementById('ad-status-msg').innerText = "", 3000);
-  }
+    async function handleAdImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('ad-status-msg').innerText = "Uploading to ImageBB...";
+      const formData = new FormData(); formData.append('image', file);
+      try {
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data && data.success) {
+          document.getElementById('ad-media-url-hidden').value = data.data.url;
+          document.getElementById('ad-img-preview').src = data.data.url;
+          document.getElementById('ad-img-preview').style.display = 'block';
+          document.getElementById('ad-status-msg').innerText = "Image Uploaded!";
+          setTimeout(() => document.getElementById('ad-status-msg').innerText = "", 2000);
+        } else { throw new Error('Upload failed'); }
+      } catch (err) { alert('Image upload failed'); document.getElementById('ad-status-msg').innerText = ""; }
+      e.target.value = '';
+    }
 
-  async function loadAds() {
-    const { data } = await db.from('ads').select('*').order('created_at', { ascending: false });
-    if(!data) return;
-    document.getElementById('ads-list').innerHTML = data.map(ad => `
-      <div class="list-item">
-        <div>
-          <div class="item-title"><span class="badge ${ad.status || 'active'}">${ad.status || 'active'}</span>${ad.media_type === 'youtube' ? '📺' : '🖼️'} ${ad.campaign_name || ad.title}</div>
-          <div class="item-meta">Rule: <strong>${ad.display_rule || 'all'}</strong> | Views: ${ad.views || 0} | Clicks: ${ad.clicks || 0}</div>
+    function resetAdForm() {
+      document.getElementById('edit-ad-id').value = '';
+      document.getElementById('ad-title').value = '';
+      document.getElementById('ad-target').value = '';
+      document.getElementById('ad-media-type').value = 'image';
+      document.getElementById('ad-status').value = 'active';
+      document.getElementById('ad-display-rule').value = 'all';
+      document.getElementById('ad-youtube-url').value = '';
+      document.getElementById('ad-media-url-hidden').value = '';
+      document.getElementById('ad-img-preview').style.display = 'none';
+      document.getElementById('ad-form-title').innerText = 'Create Ad Campaign';
+      document.querySelectorAll('input[name="ad_target_posts"]').forEach(cb => cb.checked = false);
+      toggleMediaUI(); toggleAdTargeting();
+    }
+
+    async function editAd(id) {
+      const { data } = await db.from('ads').select('*').eq('id', id).single();
+      if(!data) return;
+      resetAdForm();
+      document.getElementById('edit-ad-id').value = data.id;
+      document.getElementById('ad-title').value = data.campaign_name || data.title || '';
+      document.getElementById('ad-target').value = data.destination_url || data.target_url || '';
+      document.getElementById('ad-status').value = data.status || 'active';
+      document.getElementById('ad-media-type').value = data.media_type || 'image';
+      document.getElementById('ad-display-rule').value = data.display_rule || 'all';
+      document.getElementById('ad-form-title').innerText = 'Edit Campaign: ' + (data.campaign_name || data.title);
+      
+      toggleMediaUI();
+      if(data.media_type === 'youtube') document.getElementById('ad-youtube-url').value = data.media_url || '';
+      else {
+        document.getElementById('ad-media-url-hidden').value = data.media_url || '';
+        if(data.media_url) { document.getElementById('ad-img-preview').src = data.media_url; document.getElementById('ad-img-preview').style.display = 'block'; }
+      }
+
+      toggleAdTargeting();
+      if(data.target_post_ids && Array.isArray(data.target_post_ids)) {
+        document.querySelectorAll('input[name="ad_target_posts"]').forEach(cb => { cb.checked = data.target_post_ids.includes(parseInt(cb.value)); });
+      }
+      switchView('ads', document.getElementById('nav-ads'));
+    }
+
+    async function saveAd() {
+      const id = document.getElementById('edit-ad-id').value;
+      const title = document.getElementById('ad-title').value;
+      const destUrl = document.getElementById('ad-target').value;
+      const mediaType = document.getElementById('ad-media-type').value;
+      const status = document.getElementById('ad-status').value;
+      const displayRule = document.getElementById('ad-display-rule').value;
+      const mediaUrl = mediaType === 'youtube' ? document.getElementById('ad-youtube-url').value : document.getElementById('ad-media-url-hidden').value;
+
+      if (!title || !mediaUrl) return alert('Campaign Name and Media are required!');
+
+      let target_post_ids = [];
+      if(displayRule.includes('specific_posts')) {
+        document.querySelectorAll('input[name="ad_target_posts"]:checked').forEach(cb => target_post_ids.push(parseInt(cb.value)));
+      }
+
+      const payload = { campaign_name: title, title: title, destination_url: destUrl, target_url: destUrl, media_type: mediaType, media_url: mediaUrl, status, display_rule: displayRule, target_post_ids };
+      document.getElementById('ad-status-msg').innerText = "Saving Ad...";
+
+      let error;
+      if(id) ({ error } = await db.from('ads').update(payload).eq('id', id));
+      else { payload.created_at = new Date().toISOString(); payload.views = 0; payload.clicks = 0; ({ error } = await db.from('ads').insert([payload])); }
+
+      if (error) return alert(error.message);
+      document.getElementById('ad-status-msg').innerText = "Ad Campaign saved!";
+      resetAdForm(); loadAds(); loadDashboardStats();
+      setTimeout(() => document.getElementById('ad-status-msg').innerText = "", 3000);
+    }
+
+    async function loadAds() {
+      const { data } = await db.from('ads').select('*').order('created_at', { ascending: false });
+      if(!data) return;
+      document.getElementById('ads-list').innerHTML = data.map(ad => `
+        <div class="list-item">
+          <div>
+            <div class="item-title"><span class="badge ${ad.status || 'active'}">${ad.status || 'active'}</span>${ad.media_type === 'youtube' ? '📺' : '🖼️'} ${ad.campaign_name || ad.title}</div>
+            <div class="item-meta">Rule: <strong>${ad.display_rule || 'all'}</strong> | Views: ${ad.views || 0} | Clicks: ${ad.clicks || 0}</div>
+          </div>
+          <div>
+            <button class="btn btn-icon btn-edit" onclick="editAd(${ad.id})"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn btn-icon btn-delete" onclick="deleteAd(${ad.id})"><i class="fa-solid fa-trash"></i></button>
+          </div>
         </div>
-        <div>
-          <button class="btn btn-icon btn-edit" onclick="editAd(${ad.id})"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-icon btn-delete" onclick="deleteAd(${ad.id})"><i class="fa-solid fa-trash"></i></button>
-        </div>
-      </div>
-    `).join('');
-  }
+      `).join('');
+    }
 
-  async function deleteAd(id) {
-    if(confirm("Delete this ad completely?")) { await db.from('ads').delete().eq('id', id); loadAds(); loadDashboardStats(); }
-  }
+    async function deleteAd(id) {
+      if(confirm("Delete this ad completely?")) { await db.from('ads').delete().eq('id', id); loadAds(); loadDashboardStats(); }
+    }
 
-  loadDashboardStats(); loadBlogs(); loadAds();
-</script>
+    loadDashboardStats(); loadBlogs(); loadAds();
+  </script>
 </body>
 </html>
