@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>Dashboard - Vitthal Speaks Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --bg: #f0f2f5; --card: #ffffff; --text: #1e293b; --muted: #64748b; --primary: #0f172a; --accent: #ff9800; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 70px; overflow-x: hidden; }
+    a { text-decoration: none; color: inherit; }
+    
+    .app-header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .app-header h1 { margin: 0; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .live-dot { width: 10px; height: 10px; background: var(--success); border-radius: 50%; display: inline-block; box-shadow: 0 0 8px var(--success); animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+    
+    .container { max-width: 1000px; margin: 0 auto; padding: 20px; width: 100%; }
+    
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 24px; }
+    .stat-card { background: var(--card); border-radius: 12px; padding: 20px 15px; text-align: center; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .stat-card i { font-size: 22px; color: var(--accent); margin-bottom: 8px; display: block; }
+    .stat-card h3 { margin: 0; font-size: 1.6rem; color: var(--primary); transition: color 0.3s; }
+    .stat-card p { margin: 4px 0 0; font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+
+    .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 20px; width: 100%; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+    h2 { font-size: 1.2rem; margin: 0; color: var(--primary); }
+
+    .list-item { display: flex; flex-direction: column; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 8px; transition: background 0.3s; }
+    .list-item:last-child { border-bottom: none; }
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; display: inline-block; width: fit-content; }
+    .badge.published, .badge.active { background: #dcfce7; color: #059669; }
+    .badge.draft, .badge.paused { background: #fef9c3; color: #d97706; }
+    
+    .btn { padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; background: var(--primary); color: white; transition: 0.2s; white-space: nowrap; }
+
+    .mobile-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
+    .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); background: none; border: none; font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 5px; }
+    .nav-item i { font-size: 1.1rem; margin-bottom: 4px; }
+    .nav-item.active { color: var(--accent); }
+    .desktop-tabs { display: none; }
+    
+    @media (min-width: 768px) {
+      .mobile-nav { display: none; }
+      body { padding-bottom: 0; }
+      .desktop-tabs { display: flex; gap: 10px; }
+      .desktop-tabs .nav-item { flex-direction: row; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; }
+      .desktop-tabs .nav-item.active { background: var(--accent); color: white; }
+      .desktop-tabs .nav-item i { margin-bottom: 0; margin-right: 8px; font-size: 1rem; }
+      .list-item { flex-direction: row; align-items: center; justify-content: space-between; }
+    }
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <h1><span class="live-dot"></span> Vitthal Speaks Admin</h1>
+    <div class="desktop-tabs">
+      <a href="index.html" class="nav-item active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+      <a href="post.html" class="nav-item"><i class="fa-solid fa-newspaper"></i> Posts</a>
+      <a href="ads.html" class="nav-item"><i class="fa-solid fa-bullhorn"></i> Ads</a>
+      <a href="enquiry.html" class="nav-item"><i class="fa-solid fa-envelope"></i> Enquiries</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <h2>Workspace Overview</h2>
+    <p style="color:var(--muted); font-size:0.9rem; margin-top:4px; margin-bottom:20px;">Real-time analytics directly from Supabase.</p>
+    
+    <div class="stats-grid">
+      <div class="stat-card"><i class="fa-solid fa-newspaper"></i><h3 id="stat-posts">...</h3><p>Total Posts</p></div>
+      <div class="stat-card"><i class="fa-solid fa-eye"></i><h3 id="stat-views">...</h3><p>Total Views</p></div>
+      <div class="stat-card"><i class="fa-solid fa-envelope"></i><h3 id="stat-enquiries">...</h3><p>Enquiries</p></div>
+      <div class="stat-card"><i class="fa-solid fa-bullhorn"></i><h3 id="stat-ads">...</h3><p>Active Ads</p></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Recent Posts</h2>
+        <a href="post.html" class="btn">+ Manage Posts</a>
+      </div>
+      <div id="recent-posts-list">Loading...</div>
+    </div>
+  </div>
+
+  <nav class="mobile-nav">
+    <a href="index.html" class="nav-item active"><i class="fa-solid fa-chart-pie"></i>Home</a>
+    <a href="post.html" class="nav-item"><i class="fa-solid fa-newspaper"></i>Posts</a>
+    <a href="ads.html" class="nav-item"><i class="fa-solid fa-bullhorn"></i>Ads</a>
+    <a href="enquiry.html" class="nav-item"><i class="fa-solid fa-envelope"></i>Enquiries</a>
+  </nav>
+
+  <script>
+    async function loadDashboardStats() {
+      const { data: posts } = await db.from('blogs').select('title, views, status, created_at').order('created_at', { ascending: false });
+      if (posts) {
+        document.getElementById('stat-posts').innerText = posts.length;
+        document.getElementById('stat-views').innerText = posts.reduce((sum, p) => sum + (p.views || 0), 0);
+        document.getElementById('recent-posts-list').innerHTML = posts.slice(0, 5).map(p => `
+          <div class="list-item">
+            <div><strong style="font-size:0.95rem; color:var(--primary); line-height:1.4; display:block;">📝 ${p.title}</strong><span style="font-size:0.8rem; color:var(--muted);"><i class="fa-solid fa-eye" style="color:var(--accent)"></i> ${p.views || 0} views</span></div>
+            <span class="badge ${p.status || 'draft'}">${p.status || 'draft'}</span>
+          </div>
+        `).join('');
+      }
+
+      const { count: enquiryCount } = await db.from('contact_messages').select('*', { count: 'exact', head: true });
+      document.getElementById('stat-enquiries').innerText = enquiryCount || 0;
+
+      const { count: adCount } = await db.from('ads').select('*', { count: 'exact', head: true }).eq('status', 'active');
+      document.getElementById('stat-ads').innerText = adCount || 0;
+    }
+    
+    // LOAD INITIALLY
+    loadDashboardStats();
+
+    // REAL-TIME WEBSOCKET SUBSCRIPTIONS
+    db.channel('dashboard-blogs')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'blogs' }, payload => {
+        console.log("Realtime blog update received!");
+        loadDashboardStats(); // Instantly update stats when a view goes up or a post is added
+      }).subscribe();
+
+    db.channel('dashboard-enquiries')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_messages' }, payload => {
+        loadDashboardStats(); // Instantly update enquiries counter
+      }).subscribe();
+  </script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>Manage Ads - Vitthal Speaks Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --bg: #f0f2f5; --card: #ffffff; --text: #1e293b; --muted: #64748b; --primary: #0f172a; --accent: #ff9800; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 70px; overflow-x: hidden; }
+    a { text-decoration: none; color: inherit; }
+    
+    .app-header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .app-header h1 { margin: 0; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    
+    .container { max-width: 1000px; margin: 0 auto; padding: 15px; width: 100%; }
+    
+    .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 20px; width: 100%; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+    h2 { font-size: 1.2rem; margin: 0; color: var(--primary); }
+
+    .input-group { margin-bottom: 15px; width: 100%; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
+    input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: #f8fafc; }
+    input:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(255,152,0,0.1); }
+
+    .upload-box { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc; transition: 0.2s; }
+    .upload-box i { font-size: 28px; color: var(--accent); margin-bottom: 8px; }
+    .img-preview { width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 12px; display: none; background: #000; }
+
+    .btn { padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-primary { background: var(--primary); color: white; width: 100%; }
+    .btn-action { background: #f1f5f9; color: var(--primary); font-size: 0.8rem; }
+    .btn-delete { background: #fee2e2; color: #dc2626; }
+
+    .list-item { display: flex; flex-direction: column; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; background: #fff; }
+    .item-title { font-weight: 700; color: var(--primary); font-size: 1.05rem; margin-bottom: 6px; }
+    .item-meta { font-size: 0.85rem; color: var(--muted); font-weight: 500; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .item-actions { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+    .item-actions .btn { flex: 1; min-width: 80px; }
+    
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+    .badge.active { background: #dcfce7; color: #059669; }
+    .badge.paused { background: #fef9c3; color: #d97706; }
+    .status-msg { text-align: center; font-weight: 600; margin-top: 10px; }
+
+    .mobile-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
+    .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); background: none; border: none; font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 5px; }
+    .nav-item i { font-size: 1.1rem; margin-bottom: 4px; }
+    .nav-item.active { color: var(--accent); }
+    .desktop-tabs { display: none; }
+    
+    @media (min-width: 768px) {
+      .mobile-nav { display: none; }
+      body { padding-bottom: 0; }
+      .desktop-tabs { display: flex; gap: 10px; }
+      .desktop-tabs .nav-item { flex-direction: row; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; }
+      .desktop-tabs .nav-item.active { background: var(--accent); color: white; }
+      .desktop-tabs .nav-item i { margin-bottom: 0; margin-right: 8px; font-size: 1rem; }
+      .list-item { flex-direction: row; justify-content: space-between; align-items: center; }
+      .item-actions { width: auto; flex-wrap: nowrap; }
+      .btn-primary { width: auto; }
+      .form-row { display: flex; gap: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <h1><span class="live-dot" style="background:#10b981; width:10px; height:10px; border-radius:50%; display:inline-block;"></span> Vitthal Speaks Admin</h1>
+    <div class="desktop-tabs">
+      <a href="index.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+      <a href="post.html" class="nav-item"><i class="fa-solid fa-newspaper"></i> Posts</a>
+      <a href="ads.html" class="nav-item active"><i class="fa-solid fa-bullhorn"></i> Ads</a>
+      <a href="enquiry.html" class="nav-item"><i class="fa-solid fa-envelope"></i> Enquiries</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h2 id="ad-form-title">Create Ad Campaign</h2>
+        <button class="btn btn-action" onclick="resetAdForm()"><i class="fa-solid fa-rotate-right"></i> Reset</button>
+      </div>
+      <input type="hidden" id="edit-ad-id">
+      
+      <div class="input-group"><label>Campaign Name</label><input type="text" id="ad-title" placeholder="e.g. Amazon Summer Sale"></div>
+      
+      <div class="form-row">
+        <div class="input-group" style="flex: 1;"><label>Ad Status</label><select id="ad-status"><option value="active">🟢 Active</option><option value="paused">🟡 Paused</option></select></div>
+        <div class="input-group" style="flex: 1;"><label>Media Type</label><select id="ad-media-type" onchange="toggleMediaUI()"><option value="image">🖼️ Image Banner</option><option value="youtube">📺 YouTube Video</option></select></div>
+      </div>
+
+      <div class="input-group"><label>Destination URL (Where to go on click)</label><input type="url" id="ad-target" placeholder="https://amazon.in/..."></div>
+      
+      <div class="input-group" id="media-ui-image">
+        <label>Upload Ad Image</label>
+        <div class="upload-box" onclick="document.getElementById('ad-img-upload').click()">
+          <i class="fa-solid fa-cloud-arrow-up"></i><p>Click to Upload via ImageBB</p>
+        </div>
+        <input type="file" id="ad-img-upload" accept="image/*" style="display:none;" onchange="handleAdImage(event)">
+        <img id="ad-img-preview" class="img-preview">
+        <input type="hidden" id="ad-media-url">
+      </div>
+      
+      <div class="input-group" id="media-ui-youtube" style="display: none;">
+        <label>YouTube Video Link</label>
+        <input type="text" id="ad-youtube-url" placeholder="https://www.youtube.com/watch?v=...">
+      </div>
+      
+      <div class="input-group">
+        <label>Targeting Rule</label>
+        <select id="ad-display-rule">
+          <option value="all">🌐 Show Everywhere (Home + All Posts)</option>
+          <option value="home_only">🏠 Home Page Only</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveAd()"><i class="fa-solid fa-bullhorn"></i> Save Ad Campaign</button>
+      <div id="ad-msg" class="status-msg"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Live Campaigns</h2></div>
+      <div id="ads-list">Loading ads...</div>
+    </div>
+  </div>
+
+  <nav class="mobile-nav">
+    <a href="index.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i>Home</a>
+    <a href="post.html" class="nav-item"><i class="fa-solid fa-newspaper"></i>Posts</a>
+    <a href="ads.html" class="nav-item active"><i class="fa-solid fa-bullhorn"></i>Ads</a>
+    <a href="enquiry.html" class="nav-item"><i class="fa-solid fa-envelope"></i>Enquiries</a>
+  </nav>
+
+  <script>
+    function toggleMediaUI() {
+      const type = document.getElementById('ad-media-type').value;
+      document.getElementById('media-ui-image').style.display = type === 'image' ? 'block' : 'none';
+      document.getElementById('media-ui-youtube').style.display = type === 'youtube' ? 'block' : 'none';
+    }
+
+    async function handleAdImage(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('ad-msg').style.color = "var(--primary)";
+      document.getElementById('ad-msg').innerText = "Uploading image...";
+      const formData = new FormData(); formData.append('image', file);
+      try {
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data && data.success) {
+          document.getElementById('ad-media-url').value = data.data.url;
+          document.getElementById('ad-img-preview').src = data.data.url;
+          document.getElementById('ad-img-preview').style.display = 'block';
+          document.getElementById('ad-msg').style.color = "var(--success)";
+          document.getElementById('ad-msg').innerText = "Image Uploaded!";
+          setTimeout(() => document.getElementById('ad-msg').innerText = "", 2000);
+        }
+      } catch (err) { document.getElementById('ad-msg').innerText = "Upload failed!"; }
+    }
+
+    function resetAdForm() {
+      document.getElementById('edit-ad-id').value = '';
+      document.getElementById('ad-title').value = '';
+      document.getElementById('ad-target').value = '';
+      document.getElementById('ad-media-type').value = 'image';
+      document.getElementById('ad-status').value = 'active';
+      document.getElementById('ad-display-rule').value = 'all';
+      document.getElementById('ad-youtube-url').value = '';
+      document.getElementById('ad-media-url').value = '';
+      document.getElementById('ad-img-preview').style.display = 'none';
+      document.getElementById('ad-form-title').innerText = 'Create Ad Campaign';
+      toggleMediaUI();
+    }
+
+    async function saveAd() {
+      const id = document.getElementById('edit-ad-id').value;
+      const title = document.getElementById('ad-title').value;
+      const destUrl = document.getElementById('ad-target').value;
+      const mediaType = document.getElementById('ad-media-type').value;
+      const status = document.getElementById('ad-status').value;
+      const displayRule = document.getElementById('ad-display-rule').value;
+      const mediaUrl = mediaType === 'youtube' ? document.getElementById('ad-youtube-url').value : document.getElementById('ad-media-url').value;
+
+      if (!title || !mediaUrl) return alert('Campaign Name and Media are required!');
+      document.getElementById('ad-msg').innerText = "Saving Ad...";
+
+      const payload = { campaign_name: title, destination_url: destUrl, media_type: mediaType, media_url: mediaUrl, status, display_rule: displayRule };
+      
+      let error;
+      if(id) ({ error } = await db.from('ads').update(payload).eq('id', id));
+      else { payload.created_at = new Date().toISOString(); payload.views = 0; payload.clicks = 0; ({ error } = await db.from('ads').insert([payload])); }
+
+      if (error) return alert(error.message);
+      document.getElementById('ad-msg').style.color="green";
+      document.getElementById('ad-msg').innerText = "Ad Campaign saved!";
+      setTimeout(() => { window.location.reload(); }, 1500);
+    }
+
+    async function loadAds() {
+      const { data } = await db.from('ads').select('*').order('created_at', { ascending: false });
+      if(data) {
+        document.getElementById('ads-list').innerHTML = data.map(ad => `
+          <div class="list-item">
+            <div style="flex:1;">
+              <div class="item-title">${ad.media_type === 'youtube' ? '📺' : '🖼️'} ${ad.campaign_name || "Ad Campaign"}</div>
+              <div class="item-meta">
+                <span class="badge ${ad.status}">${ad.status}</span>
+                <span>Rule: ${ad.display_rule}</span>
+                <span><i class="fa-solid fa-eye"></i> ${ad.views || 0}</span>
+              </div>
+            </div>
+            <div class="item-actions">
+              <button class="btn btn-action" onclick="editAd(${ad.id})"><i class="fa-solid fa-pen"></i> Edit</button>
+              <button class="btn btn-action btn-delete" onclick="deleteAd(${ad.id})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function editAd(id) {
+      const { data } = await db.from('ads').select('*').eq('id', id).single();
+      if(!data) return;
+      resetAdForm();
+      document.getElementById('edit-ad-id').value = data.id;
+      document.getElementById('ad-title').value = data.campaign_name || '';
+      document.getElementById('ad-target').value = data.destination_url || '';
+      document.getElementById('ad-status').value = data.status || 'active';
+      document.getElementById('ad-media-type').value = data.media_type || 'image';
+      document.getElementById('ad-display-rule').value = data.display_rule || 'all';
+      toggleMediaUI();
+      if(data.media_type === 'youtube') { document.getElementById('ad-youtube-url').value = data.media_url || ''; }
+      else {
+        document.getElementById('ad-media-url').value = data.media_url || '';
+        if(data.media_url) { document.getElementById('ad-img-preview').src = data.media_url; document.getElementById('ad-img-preview').style.display = 'block'; }
+      }
+      document.getElementById('ad-form-title').innerText = 'Edit Campaign';
+      window.scrollTo(0, 0);
+    }
+
+    async function deleteAd(id) {
+      if(confirm("Delete this ad completely?")) { await db.from('ads').delete().eq('id', id); loadAds(); }
+    }
+
+    loadAds();
+  </script>
+</body>
+</html>
