@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -32,14 +32,6 @@
     .enquiry-date { font-size: 0.75rem; color: var(--muted); font-weight: 600; margin-top: 5px; }
     .enquiry-msg { font-size: 0.95rem; color: #333; line-height: 1.6; white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 4px solid var(--accent); }
     
-    /* Admin Note Section */
-    .note-section { margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px; }
-    .note-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
-    .note-input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; font-family: inherit; resize: vertical; min-height: 60px; margin-bottom: 8px; background: #fffbeb; }
-    .note-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,152,0,0.1); }
-    .btn-note { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
-    .btn-note:hover { background: #bae6fd; }
-
     .delete-btn { position: absolute; top: 15px; right: 15px; background: #fee2e2; color: var(--danger); border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
     .delete-btn:hover { background: var(--danger); color: white; }
 
@@ -110,7 +102,6 @@
       list.innerHTML = data.map(msg => `
         <div class="enquiry-card">
           <button class="delete-btn" onclick="deleteMessage(${msg.id})"><i class="fa-solid fa-trash"></i></button>
-          
           <div class="enquiry-header">
             <div>
               <div class="enquiry-name"><i class="fa-solid fa-user-circle"></i> ${msg.name}</div>
@@ -118,44 +109,16 @@
             </div>
             <div class="enquiry-date">${formatDate(msg.created_at)}</div>
           </div>
-          
           <div class="enquiry-msg">${msg.message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-          
-          <div class="note-section">
-            <span class="note-label"><i class="fa-solid fa-thumbtack"></i> Admin Note / Status:</span>
-            <textarea id="note-${msg.id}" class="note-input" placeholder="e.g. Replied, Waiting on details, Closed...">${msg.admin_note || ''}</textarea>
-            <button class="btn-note" onclick="saveNote(${msg.id})"><i class="fa-solid fa-save"></i> Save Note</button>
-            <span id="note-msg-${msg.id}" style="font-size: 0.8rem; font-weight: 600; margin-left: 10px;"></span>
-          </div>
-
         </div>
       `).join('');
     }
 
-    async function saveNote(id) {
-      const noteContent = document.getElementById(`note-${id}`).value;
-      const statusSpan = document.getElementById(`note-msg-${id}`);
-      
-      statusSpan.style.color = "var(--primary)";
-      statusSpan.innerText = "Saving...";
-
-      const { error } = await db.from('contact_messages').update({ admin_note: noteContent }).eq('id', id);
-      
-      if (error) {
-        statusSpan.style.color = "red";
-        statusSpan.innerText = "Error saving note!";
-      } else {
-        statusSpan.style.color = "var(--success)";
-        statusSpan.innerText = "Note Saved!";
-        setTimeout(() => { statusSpan.innerText = ""; }, 2500);
-      }
-    }
-
-    // ONLY reload automatically when a brand new message arrives, 
-    // so we don't accidentally wipe out a note the admin is currently typing!
-    db.channel('admin-enquiries-insert')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contact_messages' }, payload => {
-        loadEnquiries();
+    // REAL-TIME WEBSOCKET SUBSCRIPTION
+    db.channel('admin-enquiries')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_messages' }, payload => {
+        console.log("New enquiry received in real-time!");
+        loadEnquiries(); // Auto-refresh the list when a user submits a form
       }).subscribe();
 
     async function deleteMessage(id) {
