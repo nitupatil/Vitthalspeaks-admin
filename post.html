@@ -146,7 +146,7 @@
 
         <div class="ai-section">
           <h3>🪄 Generate Text Content with Gemini AI</h3>
-          <p style="font-size: 0.85rem; color: #6b21a8; margin-top: 0; margin-bottom: 12px;">Enter a topic. AI will automatically write the HTML body and generate SEO data.</p>
+          <p style="font-size: 0.85rem; color: #6b21a8; margin-top: 0; margin-bottom: 12px;">Enter a topic. AI will securely pull the server key, write the HTML body, and generate SEO data.</p>
           <div class="input-group" style="margin-bottom: 12px;">
             <input type="text" id="ai-prompt" class="ai-input" placeholder="e.g. Write a Marathi post about the MPSC exam updates 2026...">
           </div>
@@ -364,15 +364,31 @@
     }
 
     // ==========================================
-    // AUTO-RETRY FETCH LOGIC
+    // SECURE SERVER-FETCHED GEMINI AI INTEGRATION
     // ==========================================
+    async function getGeminiKey() {
+      const { data, error } = await db.rpc('get_secret_key', { secret_name: 'GEMINI_API_KEY' });
+      if (error || !data) throw new Error("Could not retrieve Gemini API key from server database.");
+      return data;
+    }
+
     async function fetchWithRetry(url, options, retries = 3) {
+      const apiKey = await getGeminiKey();
+      const cleanUrl = url.split('?')[0];
+      const authOptions = {
+        ...options,
+        headers: {
+          ...options.headers,
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      };
+
       for (let i = 0; i < retries; i++) {
-        const response = await fetch(url, options);
+        const response = await fetch(cleanUrl, authOptions);
         if (response.ok) return response;
-        if (response.status === 503) {
-          if (i === retries - 1) throw new Error("Google API is currently overloaded with global traffic (503). Please wait a few minutes and try again.");
-          // Wait exponentially: 2s, 4s, etc.
+        if (response.status === 503 || response.status === 429) {
+          if (i === retries - 1) throw new Error(`Google API high demand (${response.status}). Please try again shortly.`);
           await new Promise(r => setTimeout(r, 2000 * (i + 1)));
           continue;
         }
@@ -381,15 +397,11 @@
       }
     }
 
-    // ==========================================
-    // GEMINI AI INTEGRATION
-    // ==========================================
     async function generateWithAI() {
       const prompt = document.getElementById('ai-prompt').value;
       const aiBtn = document.getElementById('btn-ai');
 
       if (!prompt) return alert("Please enter a topic for the AI to generate.");
-      if (typeof GEMINI_API_KEY === 'undefined' || !GEMINI_API_KEY) return alert("Error: GEMINI_API_KEY is missing in config.js.");
 
       aiBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating Post Structure...';
       aiBtn.disabled = true;
@@ -406,9 +418,8 @@
       }`;
 
       try {
-        const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemInstruction }] }],
             generationConfig: { responseMimeType: "application/json" }
@@ -457,9 +468,8 @@
       IMPORTANT: Respond ONLY with the completely updated raw HTML. Do not use markdown blocks.`;
 
       try {
-        const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemInstruction }] }],
             generationConfig: { responseMimeType: "text/plain" }
@@ -675,7 +685,7 @@
         const payload = { 
           title, title_en: document.getElementById('u-title-en').value, category: document.getElementById('u-category').value,
           slug, excerpt, content, status, views: 0, seo_keywords: document.getElementById('u-seo-keywords').value,
-          featured_image: document.getElementById('u-media-url').value, created_at: new Date().toISOString() 
+          featured_image: document.getElementById('p-media-url').value, created_at: new Date().toISOString() 
         };
         if(status === 'published') payload.published_at = new Date().toISOString();
 
