@@ -386,7 +386,6 @@
     async function fetchWithRetry(url, options, retries = 3) {
       const apiKey = await getGeminiKey();
       
-      // Properly append the ?key parameter to the URL to authenticate the request
       const fetchUrl = url.includes('?') ? `${url}&key=${apiKey}` : `${url}?key=${apiKey}`;
 
       const fetchOptions = {
@@ -419,15 +418,21 @@
       aiBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating Post Structure...';
       aiBtn.disabled = true;
 
-      const systemInstruction = `You are an expert Marathi blog writer. Write a high-quality, SEO-optimized blog post in Marathi about: "${prompt}".
-      IMPORTANT: Respond ONLY with a valid JSON object. Do not include markdown code blocks. Use these exact keys:
+      const systemInstruction = `You are an expert Marathi blog writer and professional web designer. Write a high-quality, SEO-optimized blog post in Marathi about: "${prompt}".
+      IMPORTANT INSTRUCTIONS:
+      1. Respond ONLY with a valid JSON object. Do not include markdown code blocks. 
+      2. Format the "content" body in modern HTML. 
+      3. **PREFIX DESIGN:** ALWAYS begin the "content" HTML with a beautiful, fully-styled highlight box summarizing the post. Use this exact structure: <div style='background-color:#fffbeb; padding:20px; border-left:6px solid #f59e0b; border-radius:8px; margin-bottom:25px; box-shadow:0 4px 6px rgba(0,0,0,0.05); font-size:1.05rem; color:#334155;'><strong style='color:#b45309; font-size:1.15rem; display:block; margin-bottom:8px;'>महत्त्वाची माहिती:</strong>[Your summary here]</div>
+      4. Use attractive inline CSS for headings (<h2>), lists (<ul>), and paragraphs to make it look premium.
+      
+      JSON KEYS TO USE:
       {
         "title": "Catchy title in Marathi",
         "title_en": "English translation of the title",
         "excerpt": "A short 2-sentence summary in Marathi",
         "keywords": "comma, separated, seo, tags",
-        "thumbnail_prompt": "A brief English visual description for an AI image generator to create a thumbnail image for this post (e.g., 'A modern office desk with papers and laptop')",
-        "content": "The full blog body formatted in raw HTML. Use <h2>, <p>, <ul>, <li>, and <strong> tags. Do not use HTML or Body tags."
+        "thumbnail_prompt": "A highly detailed English description for an AI image generator to create a YouTube-style thumbnail. Mention Marathi people, Maharashtrian cultural contexts, clear layout, and highly detailed visual elements.",
+        "content": "The full blog HTML starting with the beautiful highlight box described above. Do not use <html> or <body> tags."
       }`;
 
       try {
@@ -478,7 +483,7 @@
 
       const systemInstruction = `You are an expert Marathi blog editor. The user wants to modify the following HTML content: "${refinePrompt}"
       Current HTML: ${currentContent}
-      IMPORTANT: Respond ONLY with the completely updated raw HTML. Do not use markdown blocks.`;
+      IMPORTANT: Respond ONLY with the completely updated raw HTML. Do not use markdown blocks. Maintain all beautiful inline CSS styling.`;
 
       try {
         const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent`, {
@@ -519,9 +524,11 @@
       btn.disabled = true;
 
       try {
-        const imagePrompt = encodeURIComponent("High quality flat vector illustration, modern blog thumbnail style, clean background, no text, " + prompt);
+        // Enforcing high quality YouTube thumbnail style with Marathi elements
+        const baseImageStyle = "High quality YouTube thumbnail style, visually striking, highly detailed, Maharashtrian cultural context, expressive Marathi people, vibrant background, featuring Devanagari typography elements, ";
+        const imagePrompt = encodeURIComponent(baseImageStyle + prompt);
         const seed = Math.floor(Math.random() * 100000);
-        const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=800&height=450&nologo=true&seed=${seed}`;
+        const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1280&height=720&nologo=true&seed=${seed}`;
         
         const imgRes = await fetch(imageUrl);
         if (!imgRes.ok) throw new Error("Failed to fetch image from Pollinations AI");
