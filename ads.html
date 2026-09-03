@@ -2,36 +2,107 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <!-- Prevents zooming, double-tap delays, and accommodates mobile notches -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Manage Ads - Vitthal Speaks Admin</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    :root { --bg: #f0f2f5; --card: #ffffff; --text: #1e293b; --muted: #64748b; --primary: #0f172a; --accent: #ff9800; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
-    * { box-sizing: border-box; }
-    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 70px; overflow-x: hidden; }
+    :root { 
+      --bg: #f0f2f5; 
+      --card: #ffffff; 
+      --text: #1e293b; 
+      --muted: #64748b; 
+      --primary: #0f172a; 
+      --accent: #ff9800; 
+      --border: #e2e8f0; 
+      --success: #10b981; 
+      --danger: #ef4444; 
+    }
+    
+    *, *::before, *::after { box-sizing: border-box; }
+    
+    html, body { 
+      width: 100%; 
+      height: 100%; 
+      margin: 0; 
+      padding: 0; 
+      overflow-x: hidden; 
+      overscroll-behavior-x: none; /* Prevents side-swipe blank space */
+      touch-action: manipulation; /* Removes double-tap zoom */
+    }
+    
+    body { 
+      font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      background: var(--bg); 
+      color: var(--text); 
+      padding-bottom: 70px; 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
     a { text-decoration: none; color: inherit; }
     
-    .app-header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .app-header { 
+      background: var(--primary); 
+      color: white; 
+      padding: 15px 20px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      position: sticky; 
+      top: 0; 
+      z-index: 100; 
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+      width: 100%;
+    }
     .app-header h1 { margin: 0; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     
-    .container { max-width: 1000px; margin: 0 auto; padding: 15px; width: 100%; }
+    .container { 
+      max-width: 1000px; 
+      margin: 0 auto; 
+      padding: 15px; 
+      width: 100%; 
+      flex: 1;
+    }
     
-    .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 20px; width: 100%; }
-    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+    .card { 
+      background: var(--card); padding: 20px; border-radius: 12px; 
+      border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
+      margin-bottom: 20px; width: 100%; 
+    }
+    .card-header { 
+      display: flex; justify-content: space-between; align-items: center; 
+      margin-bottom: 15px; border-bottom: 1px solid var(--border); 
+      padding-bottom: 10px; flex-wrap: wrap; gap: 10px; 
+    }
     h2 { font-size: 1.2rem; margin: 0; color: var(--primary); }
 
     .input-group { margin-bottom: 15px; width: 100%; }
     .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
-    input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: #f8fafc; }
+    
+    /* 16px font size to prevent iOS auto-zoom */
+    input, textarea, select { 
+      width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; 
+      border-radius: 8px; font-family: inherit; font-size: 16px; 
+      background: #f8fafc; 
+    }
     input:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(255,152,0,0.1); }
 
     .upload-box { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc; transition: 0.2s; }
     .upload-box i { font-size: 28px; color: var(--accent); margin-bottom: 8px; }
     .img-preview { width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 12px; display: none; background: #000; }
 
-    .btn { padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn { 
+      padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; 
+      border: none; font-size: 0.9rem; transition: 0.2s; display: inline-flex; 
+      align-items: center; justify-content: center; gap: 6px; 
+      white-space: nowrap; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+    }
     .btn-primary { background: var(--primary); color: white; width: 100%; }
     .btn-action { background: #f1f5f9; color: var(--primary); font-size: 0.8rem; }
     .btn-delete { background: #fee2e2; color: #dc2626; }
@@ -39,29 +110,53 @@
     .list-item { display: flex; flex-direction: column; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; background: #fff; }
     .item-title { font-weight: 700; color: var(--primary); font-size: 1.05rem; margin-bottom: 6px; }
     .item-meta { font-size: 0.85rem; color: var(--muted); font-weight: 500; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-    .item-actions { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
-    .item-actions .btn { flex: 1; min-width: 80px; }
+    
+    /* Responsive Grid for Action Buttons */
+    .item-actions { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); 
+      gap: 8px; 
+      width: 100%; 
+    }
+    .item-actions .btn { 
+      padding: 8px; 
+      font-size: 0.8rem; 
+      width: 100%; 
+    }
     
     .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
     .badge.active { background: #dcfce7; color: #059669; }
     .badge.paused { background: #fef9c3; color: #d97706; }
     .status-msg { text-align: center; font-weight: 600; margin-top: 10px; }
 
-    .mobile-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
-    .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); background: none; border: none; font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 5px; }
+    /* Mobile App Navigation */
+    .mobile-nav { 
+      position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; 
+      border-top: 1px solid var(--border); display: flex; justify-content: space-around; 
+      padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); 
+      z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); 
+    }
+    .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); background: none; border: none; font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 5px; width: 25%; }
     .nav-item i { font-size: 1.1rem; margin-bottom: 4px; }
     .nav-item.active { color: var(--accent); }
     .desktop-tabs { display: none; }
     
+    /* Desktop Software View */
     @media (min-width: 768px) {
+      body { 
+        padding-bottom: 0; 
+        background: #e2e8f0; 
+      }
+      .app-header { max-width: 1000px; border-radius: 0 0 8px 8px; }
       .mobile-nav { display: none; }
-      body { padding-bottom: 0; }
       .desktop-tabs { display: flex; gap: 10px; }
-      .desktop-tabs .nav-item { flex-direction: row; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; }
+      .desktop-tabs .nav-item { flex-direction: row; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; width: auto; }
       .desktop-tabs .nav-item.active { background: var(--accent); color: white; }
       .desktop-tabs .nav-item i { margin-bottom: 0; margin-right: 8px; font-size: 1rem; }
+      
       .list-item { flex-direction: row; justify-content: space-between; align-items: center; }
-      .item-actions { width: auto; flex-wrap: nowrap; }
+      .item-actions { display: flex; width: auto; flex-wrap: nowrap; }
+      .item-actions .btn { width: auto; padding: 10px 14px; font-size: 0.9rem; }
       .btn-primary { width: auto; }
       .form-row { display: flex; gap: 15px; }
     }
@@ -216,7 +311,7 @@
             </div>
             <div class="item-actions">
               <button class="btn btn-action" onclick="editAd(${ad.id})"><i class="fa-solid fa-pen"></i> Edit</button>
-              <button class="btn btn-action btn-delete" onclick="deleteAd(${ad.id})"><i class="fa-solid fa-trash"></i></button>
+              <button class="btn btn-action btn-delete" onclick="deleteAd(${ad.id})"><i class="fa-solid fa-trash"></i> Delete</button>
             </div>
           </div>
         `).join('');
