@@ -8,6 +8,8 @@
   <script src="config.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700;900&display=swap');
+    
     :root { --bg: #f0f2f5; --card: #ffffff; --text: #1e293b; --muted: #64748b; --primary: #0f172a; --accent: #ff9800; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
     * { box-sizing: border-box; }
     body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 70px; overflow-x: hidden; }
@@ -124,7 +126,6 @@
       <button class="post-tab" onclick="switchTab('upload-tab', this)"><i class="fa-solid fa-file-code"></i> Upload HTML</button>
     </div>
 
-    <!-- 1. POST LIST TAB -->
     <div id="list-tab" class="tab-content active">
       <div class="card">
         <div class="card-header">
@@ -135,7 +136,6 @@
       </div>
     </div>
 
-    <!-- 2. EDITOR TAB -->
     <div id="editor-tab" class="tab-content">
       <div class="card">
         <div class="card-header">
@@ -146,7 +146,6 @@
         <input type="hidden" id="edit-id">
         <input type="hidden" id="p-media-url">
 
-        <!-- GEMINI AI POST SECTION (SECURE DATABASE AUTH) -->
         <div class="ai-section">
           <h3>🪄 Generate Text Content with Gemini AI</h3>
           <p style="font-size: 0.85rem; color: #6b21a8; margin-top: 0; margin-bottom: 12px;">Enter a topic. AI will securely pull the server key, write the HTML body, and generate SEO data.</p>
@@ -155,7 +154,6 @@
           </div>
           <button id="btn-ai" class="btn-ai" onclick="generateWithAI()">✨ Generate Blog Content</button>
 
-          <!-- REFINEMENT BOX -->
           <div id="ai-refine-box" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #d8b4fe;">
             <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #7e22ce; margin-bottom: 6px;">Modify / Refine Existing Text:</label>
             <div style="display: flex; gap: 10px;">
@@ -165,16 +163,13 @@
           </div>
         </div>
 
-        <!-- STANDARD EDITOR FIELDS -->
         <div class="input-group"><label>Title (Marathi) <span class="required">*</span></label><input type="text" id="p-title" placeholder="Enter post title"></div>
         <div class="input-group"><label>HTML Content <span class="required">*</span></label><textarea id="p-content" rows="15" placeholder="Write your HTML content here..."></textarea></div>
         <div class="input-group"><label>Short Excerpt <span class="required">*</span></label><input type="text" id="p-excerpt" placeholder="Short preview text"></div>
         
-        <!-- THUMBNAIL STUDIO -->
         <label style="display: block; font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); margin-top: 25px;"><i class="fa-solid fa-image"></i> Thumbnail Studio</label>
         <div class="thumb-studio">
           
-          <!-- Manual Upload -->
           <div class="thumb-card thumb-manual">
             <label style="color: #d97706; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 1: Manual Upload</label>
             <div class="upload-box" onclick="document.getElementById('p-img-upload').click()" style="background: white; border-color: #fde68a; padding: 15px;">
@@ -183,13 +178,11 @@
             <input type="file" id="p-img-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'p-media-url', 'p-img-preview', 'p-msg')">
           </div>
 
-          <!-- AI Generator -->
           <div class="thumb-card thumb-ai">
-            <label style="color: #7e22ce; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Generate with AI</label>
-            <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8b4fe; font-size:0.85rem; margin-bottom:10px;" placeholder="Visual description for image...">
-            <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Preview Locally</button>
+            <label style="color: #7e22ce; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Generate Smart Thumbnail</label>
+            <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8b4fe; font-size:0.85rem; margin-bottom:10px;" placeholder="Background description (e.g. Marathi people in office)...">
+            <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Background & Add Text</button>
             
-            <!-- Local Staging Area -->
             <div id="staged-thumb-container" style="display: none; margin-top: 15px; border-top: 1px dashed #d8b4fe; padding-top: 15px;">
               <p style="font-size: 0.75rem; color: #7e22ce; margin:0 0 5px 0; font-weight:600;">Local Preview (Not Uploaded Yet):</p>
               <img id="staged-thumb-preview" src="" style="width: 100%; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -228,7 +221,6 @@
       </div>
     </div>
 
-    <!-- 3. HTML UPLOAD TAB -->
     <div id="upload-tab" class="tab-content">
       <div class="card">
         <h2>Upload HTML File</h2>
@@ -264,7 +256,6 @@
     </div>
   </div>
 
-  <!-- FULL SCREEN REALISTIC PREVIEW MODAL -->
   <div class="modal-overlay" id="preview-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -431,7 +422,7 @@
         "title_en": "English translation of the title",
         "excerpt": "A short 2-sentence summary in Marathi",
         "keywords": "comma, separated, seo, tags",
-        "thumbnail_prompt": "A highly detailed English description for an AI image generator to create a YouTube-style thumbnail. Mention Marathi people, Maharashtrian cultural contexts, clear layout, and highly detailed visual elements.",
+        "thumbnail_prompt": "A brief English visual description for the background of a YouTube thumbnail (e.g., 'Modern office desk', 'Maharashtrian village scene'). DO NOT ask for text in this prompt.",
         "content": "The full blog HTML starting with the beautiful highlight box described above. Do not use <html> or <body> tags."
       }`;
 
@@ -461,7 +452,7 @@
 
         document.getElementById('ai-thumb-prompt').value = aiData.thumbnail_prompt || aiData.title_en;
 
-        alert("Text Content generated successfully! You can now scroll down to the Thumbnail Studio to generate an image.");
+        alert("Text Content generated successfully! You can now scroll down to the Thumbnail Studio to generate a smart image.");
       } catch (err) {
         console.error(err); 
         alert("AI Generation failed. \n\nError details: " + err.message);
@@ -512,36 +503,107 @@
     }
 
     // ==========================================
-    // THUMBNAIL STUDIO LOGIC
+    // SMART THUMBNAIL STUDIO LOGIC (Canvas Overlay)
     // ==========================================
 
     async function generateAIThumbnail() {
       const prompt = document.getElementById('ai-thumb-prompt').value;
+      const marathiTitle = document.getElementById('p-title').value;
+
       if(!prompt) return alert("Please enter an image description first.");
+      if(!marathiTitle) return alert("Please generate the blog post first so we have a Marathi title for the thumbnail.");
       
       const btn = document.getElementById('btn-gen-thumb');
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating Background & Text...';
       btn.disabled = true;
 
       try {
-        // Enforcing high quality YouTube thumbnail style with Marathi elements
-        const baseImageStyle = "High quality YouTube thumbnail style, visually striking, highly detailed, Maharashtrian cultural context, expressive Marathi people, vibrant background, featuring Devanagari typography elements, ";
-        const imagePrompt = encodeURIComponent(baseImageStyle + prompt);
+        // 1. Fetch high-quality background without text
+        const imagePrompt = encodeURIComponent("Cinematic, high quality background image, completely empty on the left side, vibrant colors, Maharashtrian context, " + prompt + ". NO text, NO letters, completely empty space.");
         const seed = Math.floor(Math.random() * 100000);
         const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1280&height=720&nologo=true&seed=${seed}`;
         
         const imgRes = await fetch(imageUrl);
         if (!imgRes.ok) throw new Error("Failed to fetch image from Pollinations AI");
-        stagedThumbnailBlob = await imgRes.blob();
+        const bgBlob = await imgRes.blob();
         
+        // 2. Load background into an Image object
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; // Allows canvas manipulation
+        img.src = URL.createObjectURL(bgBlob);
+        
+        await new Promise((resolve, reject) => {
+           img.onload = resolve;
+           img.onerror = reject;
+        });
+
+        // 3. Setup HTML5 Canvas (1280x720 HD)
+        const canvas = document.createElement('canvas');
+        canvas.width = 1280;
+        canvas.height = 720;
+        const ctx = canvas.getContext('2d');
+
+        // Draw Background
+        ctx.drawImage(img, 0, 0, 1280, 720);
+
+        // Draw Dark Gradient Overlay on the left side for readability
+        const grd = ctx.createLinearGradient(0, 0, 1000, 0);
+        grd.addColorStop(0, "rgba(0,0,0,0.85)");
+        grd.addColorStop(0.5, "rgba(0,0,0,0.5)");
+        grd.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 1280, 720);
+
+        // Draw Accent Graphic (Orange Line)
+        ctx.fillStyle = "#f59e0b"; 
+        ctx.fillRect(50, 150, 12, 120);
+
+        // 4. Draw Marathi Title perfectly using browser fonts
+        ctx.fillStyle = "white";
+        ctx.font = "900 80px 'Noto Sans Devanagari', sans-serif";
+        ctx.textBaseline = "top";
+        ctx.shadowColor = "rgba(0,0,0,0.9)";
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetX = 3;
+        ctx.shadowOffsetY = 3;
+
+        // Word Wrap logic for Title
+        const words = marathiTitle.split(' ');
+        let line = '';
+        let y = 150;
+        const maxWidth = 750; 
+
+        for(let i=0; i<words.length; i++) {
+            let testLine = line + words[i] + ' ';
+            let metrics = ctx.measureText(testLine);
+            if(metrics.width > maxWidth && i > 0) {
+                ctx.fillText(line.trim(), 85, y);
+                line = words[i] + ' ';
+                y += 110; // Line height
+            } else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line.trim(), 85, y);
+
+        // 5. Draw Branding Badge at the bottom
+        ctx.font = "bold 35px sans-serif";
+        ctx.fillStyle = "#fde68a";
+        ctx.fillText("VITTHAL SPEAKS", 85, 620);
+
+        // 6. Convert final merged canvas back to Blob
+        stagedThumbnailBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+        
+        // Show Local Preview
         const localUrl = URL.createObjectURL(stagedThumbnailBlob);
         document.getElementById('staged-thumb-preview').src = localUrl;
         document.getElementById('staged-thumb-container').style.display = 'block';
+
       } catch (e) {
         console.error(e); 
-        alert("Failed to generate image.");
+        alert("Failed to generate smart thumbnail.");
       } finally {
-        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Preview Locally';
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Background & Add Text';
         btn.disabled = false;
       }
     }
