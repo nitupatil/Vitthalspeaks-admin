@@ -1,9 +1,9 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <title>Enquiries - Vitthal Speaks Admin</title>
+  <title>Manage Posts - Vitthal Speaks Admin</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,21 +19,58 @@
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
     
     .container { max-width: 1000px; margin: 0 auto; padding: 15px; width: 100%; }
-    .header-action { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    h2 { font-size: 1.3rem; margin: 0; color: var(--primary); }
-
-    .btn-action { background: #f1f5f9; border: 1px solid var(--border); color: var(--primary); padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 0.9rem; }
-
-    .enquiry-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
-    .enquiry-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 15px; position: relative; width: 100%; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
-    .enquiry-header { border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; margin-bottom: 12px; padding-right: 40px; }
-    .enquiry-name { font-weight: 700; font-size: 1.05rem; color: var(--primary); margin-bottom: 4px; }
-    .enquiry-email { font-size: 0.85rem; color: var(--muted); word-break: break-all; }
-    .enquiry-date { font-size: 0.75rem; color: var(--muted); font-weight: 600; margin-top: 5px; }
-    .enquiry-msg { font-size: 0.95rem; color: #333; line-height: 1.6; white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 4px solid var(--accent); }
     
-    .delete-btn { position: absolute; top: 15px; right: 15px; background: #fee2e2; color: var(--danger); border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-    .delete-btn:hover { background: var(--danger); color: white; }
+    .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 20px; width: 100%; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+    h2 { font-size: 1.2rem; margin: 0; color: var(--primary); }
+
+    .post-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .post-tabs::-webkit-scrollbar { display: none; }
+    .post-tab { background: none; border: none; font-size: 0.95rem; font-weight: 600; color: var(--muted); cursor: pointer; padding: 8px 12px; border-radius: 8px; transition: 0.2s; }
+    .post-tab.active { background: var(--primary); color: white; }
+
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .input-group { margin-bottom: 15px; width: 100%; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--primary-dark); }
+    .input-group label span.required { color: var(--danger); }
+    input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: #f8fafc; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(255,152,0,0.1); }
+
+    .upload-box { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc; transition: 0.2s; }
+    .upload-box i { font-size: 28px; color: var(--accent); margin-bottom: 8px; }
+    .upload-box p { margin: 0; font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+    .img-preview { width: 100%; max-height: 250px; object-fit: contain; border-radius: 8px; margin-top: 12px; display: none; background: #000; }
+
+    .seo-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+    .seo-section h3 { font-size: 1rem; margin-top: 0; margin-bottom: 15px; color: var(--primary); }
+
+    .btn { padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+    .btn-primary { background: var(--primary); color: white; width: 100%; }
+    .btn-action { background: #f1f5f9; color: var(--primary); font-size: 0.8rem; }
+    .btn-warning { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+    .btn-success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+    .btn-delete { background: #fee2e2; color: #dc2626; }
+
+    .list-item { display: flex; flex-direction: column; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; background: #fff; transition: background 0.3s; }
+    .item-title { font-weight: 700; color: var(--primary); font-size: 1.05rem; margin-bottom: 6px; line-height: 1.4; }
+    .item-meta { font-size: 0.85rem; color: var(--muted); font-weight: 500; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .item-actions { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+    .item-actions .btn { flex: 1; min-width: 80px; }
+    
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+    .badge.published { background: #dcfce7; color: #059669; border: 1px solid #a7f3d0; }
+    .badge.draft { background: #fef9c3; color: #d97706; border: 1px solid #fde68a; }
+    
+    .status-msg { text-align: center; font-weight: 600; margin-top: 10px; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 0; }
+    .modal-content { background: white; width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    .modal-header { padding: 15px 20px; background: #001f3f; color: white; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10; }
+    .modal-body { padding: 0; flex: 1; background: #f4f6f8; overflow: hidden; }
+    .preview-iframe { width: 100%; height: 100%; border: none; background: transparent; }
 
     .mobile-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
     .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); background: none; border: none; font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 5px; }
@@ -48,9 +85,10 @@
       .desktop-tabs .nav-item { flex-direction: row; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; }
       .desktop-tabs .nav-item.active { background: var(--accent); color: white; }
       .desktop-tabs .nav-item i { margin-bottom: 0; margin-right: 8px; font-size: 1rem; }
-      .enquiry-card { padding: 20px; }
-      .enquiry-header { display: flex; justify-content: space-between; align-items: flex-start; padding-right: 50px; }
-      .enquiry-date { margin-top: 0; }
+      .list-item { flex-direction: row; justify-content: space-between; align-items: center; }
+      .item-actions { width: auto; flex-wrap: nowrap; }
+      .btn-primary { width: auto; }
+      .form-actions { display: flex; gap: 10px; }
     }
   </style>
 </head>
@@ -60,75 +98,378 @@
     <h1><span class="live-dot"></span> Vitthal Speaks Admin</h1>
     <div class="desktop-tabs">
       <a href="index.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
-      <a href="post.html" class="nav-item"><i class="fa-solid fa-newspaper"></i> Posts</a>
+      <a href="post.html" class="nav-item active"><i class="fa-solid fa-newspaper"></i> Posts</a>
       <a href="ads.html" class="nav-item"><i class="fa-solid fa-bullhorn"></i> Ads</a>
-      <a href="enquiry.html" class="nav-item active"><i class="fa-solid fa-envelope"></i> Enquiries</a>
+      <a href="enquiry.html" class="nav-item"><i class="fa-solid fa-envelope"></i> Enquiries</a>
     </div>
   </header>
 
   <div class="container">
-    <div class="header-action">
-      <h2>Website Enquiries</h2>
-      <button class="btn-action" onclick="loadEnquiries()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+    <div class="post-tabs">
+      <button class="post-tab active" onclick="switchTab('list-tab', this)"><i class="fa-solid fa-list"></i> All Posts</button>
+      <button class="post-tab" onclick="switchTab('editor-tab', this)"><i class="fa-solid fa-pen"></i> Write Post</button>
+      <button class="post-tab" onclick="switchTab('upload-tab', this)"><i class="fa-solid fa-file-code"></i> Upload HTML</button>
     </div>
-    
-    <div id="enquiry-list" class="enquiry-grid">
-      <div style="text-align: center; color: var(--muted); padding: 40px;">Loading messages...</div>
+
+    <!-- 1. POST LIST TAB -->
+    <div id="list-tab" class="tab-content active">
+      <div class="card">
+        <div class="card-header">
+          <h2>Live & Draft Posts</h2> 
+          <button class="btn btn-action" onclick="loadBlogs()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+        </div>
+        <div id="blogs-list">Loading posts...</div>
+      </div>
+    </div>
+
+    <!-- 2. EDITOR TAB -->
+    <div id="editor-tab" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 id="form-title">Create New Article</h2>
+          <button class="btn btn-action" onclick="resetBlogForm()"><i class="fa-solid fa-rotate-right"></i> Clear Form</button>
+        </div>
+        <input type="hidden" id="edit-id">
+        <div class="input-group"><label>Title (Marathi) <span class="required">*</span></label><input type="text" id="p-title" placeholder="Enter post title"></div>
+        <div class="input-group"><label>HTML Content <span class="required">*</span></label><textarea id="p-content" rows="12" placeholder="Write your HTML content here..."></textarea></div>
+        <div class="input-group"><label>Short Excerpt <span class="required">*</span></label><input type="text" id="p-excerpt" placeholder="Short preview text"></div>
+        
+        <div class="input-group" style="background: #fff8e1; padding: 15px; border-radius: 12px; border: 1px solid #fde68a;">
+          <label style="color: #d97706; font-size: 1rem;"><i class="fa-solid fa-image"></i> Featured Image (Thumbnail)</label>
+          <div class="upload-box" onclick="document.getElementById('p-img-upload').click()" style="background: white; border-color: #fde68a;">
+            <i class="fa-solid fa-cloud-arrow-up" style="color: #d97706;"></i><p style="color: #d97706;">Click to Upload Thumbnail via ImageBB</p>
+          </div>
+          <input type="file" id="p-img-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'p-media-url', 'p-img-preview', 'p-msg')">
+          <img id="p-img-preview" class="img-preview">
+          <input type="hidden" id="p-media-url">
+        </div>
+
+        <div class="seo-section">
+          <h3><i class="fa-solid fa-magnifying-glass-chart"></i> Advanced SEO Settings</h3>
+          <div class="input-group"><label>English Title</label><input type="text" id="p-title-en" placeholder="e.g. Ladki Bahin Yojana"></div>
+          <div class="input-group"><label>Category</label><input type="text" id="p-category" placeholder="e.g. शासकीय योजना"></div>
+          <div class="input-group"><label>URL Slug</label><input type="text" id="p-slug" placeholder="e.g. ladki-bahin-yojana"></div>
+          <div class="input-group"><label>SEO Keywords</label><input type="text" id="p-seo-keywords" placeholder="yojana, maharashtra"></div>
+        </div>
+
+        <div class="input-group">
+          <label>Status</label>
+          <select id="p-status"><option value="published">🟢 Published (Live)</option><option value="draft">🟡 Draft (Hidden)</option></select>
+        </div>
+        <div class="form-actions" style="display: flex; gap: 10px; flex-direction: column;">
+          <button class="btn btn-action" style="width: 100%; padding: 12px; border: 1px solid var(--primary);" onclick="previewEditor()"><i class="fa-solid fa-eye"></i> Full Screen Preview</button>
+          <button class="btn btn-primary" style="width: 100%; padding: 12px;" onclick="savePost()"><i class="fa-solid fa-cloud-arrow-up"></i> Save Post to Database</button>
+        </div>
+        <div id="p-msg" class="status-msg" style="color:var(--success);"></div>
+      </div>
+    </div>
+
+    <!-- 3. HTML UPLOAD TAB -->
+    <div id="upload-tab" class="tab-content">
+      <div class="card">
+        <h2>Upload HTML File</h2>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 20px;">Upload a pre-written .html file. The system will extract the body securely.</p>
+        
+        <div class="input-group"><label>Title (Marathi) <span class="required">*</span></label><input type="text" id="u-title" placeholder="Enter article title"></div>
+        <div class="input-group"><label>Short Excerpt <span class="required">*</span></label><input type="text" id="u-excerpt" placeholder="Short description"></div>
+        
+        <div class="input-group" style="background: #fff8e1; padding: 15px; border-radius: 12px; border: 1px solid #fde68a;">
+          <label style="color: #d97706; font-size: 1rem;"><i class="fa-solid fa-image"></i> Featured Image (Thumbnail)</label>
+          <div class="upload-box" onclick="document.getElementById('u-img-upload').click()" style="background: white; border-color: #fde68a;">
+            <i class="fa-solid fa-cloud-arrow-up" style="color: #d97706;"></i><p style="color: #d97706;">Click to Upload Thumbnail</p>
+          </div>
+          <input type="file" id="u-img-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'u-media-url', 'u-img-preview', 'u-msg')">
+          <img id="u-img-preview" class="img-preview">
+          <input type="hidden" id="u-media-url">
+        </div>
+
+        <div class="seo-section">
+          <h3><i class="fa-solid fa-magnifying-glass-chart"></i> Advanced SEO Settings</h3>
+          <div class="input-group"><label>English Title</label><input type="text" id="u-title-en" placeholder="e.g. MPSC Update"></div>
+          <div class="input-group"><label>Category</label><input type="text" id="u-category" placeholder="e.g. नोकरी"></div>
+          <div class="input-group"><label>URL Slug</label><input type="text" id="u-slug" placeholder="e.g. mpsc-update"></div>
+          <div class="input-group"><label>SEO Keywords</label><input type="text" id="u-seo-keywords" placeholder="mpsc, maharashtra"></div>
+        </div>
+
+        <div class="input-group"><label>Select .html File <span class="required">*</span></label><input type="file" id="u-file" accept=".html" style="background: white; padding: 15px;"></div>
+        <div class="input-group"><label>Status</label><select id="u-status"><option value="published">🟢 Published (Live)</option><option value="draft">🟡 Draft (Hidden)</option></select></div>
+        
+        <button class="btn btn-primary" onclick="uploadHtmlFile()" style="width: 100%; padding: 12px;"><i class="fa-solid fa-upload"></i> Extract & Publish</button>
+        <div id="u-msg" class="status-msg" style="color:var(--success);"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL SCREEN REALISTIC PREVIEW MODAL -->
+  <div class="modal-overlay" id="preview-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin:0; font-size:1.1rem;"><i class="fa-solid fa-desktop"></i> Live Website Preview</h3>
+        <button class="btn btn-action" style="color: var(--primary-dark);" onclick="document.getElementById('preview-modal').style.display='none'"><i class="fa-solid fa-xmark"></i> Close Preview</button>
+      </div>
+      <div class="modal-body">
+        <iframe id="preview-iframe" class="preview-iframe"></iframe>
+      </div>
     </div>
   </div>
 
   <nav class="mobile-nav">
     <a href="index.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i>Home</a>
-    <a href="post.html" class="nav-item"><i class="fa-solid fa-newspaper"></i>Posts</a>
+    <a href="post.html" class="nav-item active"><i class="fa-solid fa-newspaper"></i>Posts</a>
     <a href="ads.html" class="nav-item"><i class="fa-solid fa-bullhorn"></i>Ads</a>
-    <a href="enquiry.html" class="nav-item active"><i class="fa-solid fa-envelope"></i>Enquiries</a>
+    <a href="enquiry.html" class="nav-item"><i class="fa-solid fa-envelope"></i>Enquiries</a>
   </nav>
 
   <script>
-    function formatDate(dateString) {
-      const d = new Date(dateString);
-      return d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    let allPosts = [];
+
+    const LIVE_SITE_CSS = "@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&display=swap'); body { font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif; background: #f4f6f8; color: #1e293b; line-height: 1.7; margin: 0; padding: 20px; } .container { max-width: 1000px; margin: 0 auto; } .article-card { background: #ffffff; border-radius: 12px; padding: 35px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; } .article-title { font-size: 2.2rem; font-weight: 800; color: #000000; line-height: 1.3; margin: 0 0 15px; } .article-content { font-size: 1.15rem; line-height: 1.8; color: #333; overflow-wrap: break-word; } .article-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); } @media (max-width: 768px) { body { padding: 0; background: #fff; } .article-card { padding: 20px 16px; border: none; border-radius: 0; box-shadow: none; } .article-title { font-size: 1.8rem; } }";
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.post-tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
     }
 
-    async function loadEnquiries() {
-      const list = document.getElementById('enquiry-list');
-      list.innerHTML = "<div style='text-align:center; padding: 20px;'><i class='fa-solid fa-spinner fa-spin'></i> Loading...</div>";
-      
-      const { data, error } = await db.from('contact_messages').select('*').order('created_at', { ascending: false });
-      
-      if(error) { list.innerHTML = `<div style="color:red; text-align:center;">Error: ${error.message}</div>`; return; }
-      if(!data || data.length === 0) { list.innerHTML = `<div style="text-align:center; padding: 40px; background: white; border-radius: 12px;">No new messages.</div>`; return; }
-
-      list.innerHTML = data.map(msg => `
-        <div class="enquiry-card">
-          <button class="delete-btn" onclick="deleteMessage(${msg.id})"><i class="fa-solid fa-trash"></i></button>
-          <div class="enquiry-header">
-            <div>
-              <div class="enquiry-name"><i class="fa-solid fa-user-circle"></i> ${msg.name}</div>
-              <div class="enquiry-email"><i class="fa-solid fa-envelope"></i> <a href="mailto:${msg.email}" style="color:#0284c7;">${msg.email}</a></div>
+    async function loadBlogs() {
+      const list = document.getElementById('blogs-list');
+      list.innerHTML = "<div style='text-align:center; padding: 20px;'><i class='fa-solid fa-spinner fa-spin'></i> Loading Database...</div>";
+      const { data } = await db.from('blogs').select('*').order('created_at', { ascending: false });
+      if(data) {
+        allPosts = data;
+        list.innerHTML = data.map(post => `
+          <div class="list-item">
+            <div style="flex:1; width: 100%;">
+              <div class="item-title">${post.title}</div>
+              <div class="item-meta">
+                <span class="badge ${post.status}">${post.status}</span>
+                <span><i class="fa-solid fa-eye" style="color:var(--accent)"></i> ${post.views || 0}</span>
+                <span style="word-break: break-all;"><i class="fa-solid fa-link"></i> /${post.slug}</span>
+              </div>
             </div>
-            <div class="enquiry-date">${formatDate(msg.created_at)}</div>
+            <div class="item-actions">
+              ${post.status === 'published' 
+                ? `<button class="btn btn-warning" onclick="toggleStatus(${post.id}, 'draft')"><i class="fa-solid fa-eye-slash"></i> Unpublish</button>`
+                : `<button class="btn btn-success" onclick="toggleStatus(${post.id}, 'published')"><i class="fa-solid fa-check"></i> Publish</button>`
+              }
+              <button class="btn btn-action" onclick="openPreview(${post.id})"><i class="fa-solid fa-desktop"></i> Preview</button>
+              <button class="btn btn-action" onclick="copyLink('${post.slug}')"><i class="fa-solid fa-share-nodes"></i> Link</button>
+              <button class="btn btn-action" onclick="editPost(${post.id})"><i class="fa-solid fa-pen"></i> Edit</button>
+              <button class="btn btn-delete" onclick="deletePost(${post.id})"><i class="fa-solid fa-trash"></i></button>
+            </div>
           </div>
-          <div class="enquiry-msg">${msg.message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-        </div>
-      `).join('');
-    }
-
-    // REAL-TIME WEBSOCKET SUBSCRIPTION
-    db.channel('admin-enquiries')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_messages' }, payload => {
-        console.log("New enquiry received in real-time!");
-        loadEnquiries(); // Auto-refresh the list when a user submits a form
-      }).subscribe();
-
-    async function deleteMessage(id) {
-      if(confirm("Are you sure you want to delete this message?")) {
-        await db.from('contact_messages').delete().eq('id', id);
-        loadEnquiries();
+        `).join('');
       }
     }
 
-    loadEnquiries();
+    // REAL-TIME UPDATES FOR POSTS LIST
+    db.channel('posts-admin-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'blogs' }, payload => {
+        // If we are actively looking at the list, update it in the background
+        if(document.getElementById('list-tab').classList.contains('active')) {
+          loadBlogs();
+        }
+      }).subscribe();
+
+    async function toggleStatus(id, newStatus) {
+      const payload = { status: newStatus, updated_at: new Date().toISOString() };
+      if(newStatus === 'published') {
+        const post = allPosts.find(p => p.id === id);
+        if(!post.published_at) payload.published_at = new Date().toISOString();
+      }
+      await db.from('blogs').update(payload).eq('id', id);
+      loadBlogs();
+    }
+
+    function copyLink(slug) {
+      const url = `${FULL_SITE_URL}/${slug}`;
+      navigator.clipboard.writeText(url);
+      alert("Live Link Copied!\n\n" + url);
+    }
+
+    // PARSER-SAFE PREVIEW INJECTION
+    function injectPreview(title, content) {
+      const safeTitle = title.replace(/"/g, '&quot;');
+      const p1 = "<!DOCTYPE html><ht" + "ml lang='mr'><he" + "ad><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><sty" + "le>";
+      const p2 = "<" + "/sty" + "le><" + "/he" + "ad><bo" + "dy><div class='container'><div class='article-card'><h1 class='article-title'>";
+      const p3 = "<" + "/h1><div class='article-content'>";
+      const p4 = "<" + "/div><" + "/div><" + "/div><" + "/bo" + "dy><" + "/ht" + "ml>";
+      
+      const docStr = p1 + LIVE_SITE_CSS + p2 + safeTitle + p3 + content + p4;
+      document.getElementById('preview-iframe').srcdoc = docStr;
+      document.getElementById('preview-modal').style.display = 'flex';
+    }
+
+    function openPreview(id) {
+      const post = allPosts.find(p => p.id === id);
+      if(post) injectPreview(post.title, post.content);
+    }
+
+    function previewEditor() {
+      const title = document.getElementById('p-title').value || "Draft Title Preview";
+      const content = document.getElementById('p-content').value || "Start writing to see the preview here...";
+      injectPreview(title, content);
+    }
+
+    async function handleImageUpload(e, hiddenInputId, previewImgId, statusMsgId) {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById(statusMsgId).style.color = "var(--primary)";
+      document.getElementById(statusMsgId).innerText = "Uploading thumbnail to ImageBB...";
+      const formData = new FormData(); formData.append('image', file);
+      try {
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data && data.success) {
+          document.getElementById(hiddenInputId).value = data.data.url;
+          document.getElementById(previewImgId).src = data.data.url;
+          document.getElementById(previewImgId).style.display = 'block';
+          document.getElementById(statusMsgId).style.color = "var(--success)";
+          document.getElementById(statusMsgId).innerText = "Thumbnail Uploaded Successfully!";
+          setTimeout(() => document.getElementById(statusMsgId).innerText = "", 3000);
+        } else { throw new Error('Upload failed'); }
+      } catch (err) { 
+        document.getElementById(statusMsgId).style.color = "red";
+        document.getElementById(statusMsgId).innerText = "Thumbnail upload failed!"; 
+      }
+      e.target.value = '';
+    }
+
+    function editPost(id) {
+      const post = allPosts.find(p => p.id === id);
+      if(!post) return;
+      document.getElementById('edit-id').value = post.id;
+      document.getElementById('p-title').value = post.title || '';
+      document.getElementById('p-title-en').value = post.title_en || '';
+      document.getElementById('p-category').value = post.category || '';
+      document.getElementById('p-slug').value = post.slug || '';
+      document.getElementById('p-seo-keywords').value = post.seo_keywords || '';
+      document.getElementById('p-media-url').value = post.featured_image || '';
+      if(post.featured_image) {
+        document.getElementById('p-img-preview').src = post.featured_image;
+        document.getElementById('p-img-preview').style.display = 'block';
+      } else {
+        document.getElementById('p-img-preview').style.display = 'none';
+      }
+      document.getElementById('p-excerpt').value = post.excerpt || '';
+      document.getElementById('p-content').value = post.content || '';
+      document.getElementById('p-status').value = post.status || 'published';
+      document.getElementById('form-title').innerText = "Edit Article";
+      switchTab('editor-tab', document.querySelectorAll('.post-tab')[1]);
+      window.scrollTo(0, 0);
+    }
+
+    async function savePost() {
+      const id = document.getElementById('edit-id').value;
+      const title = document.getElementById('p-title').value;
+      const content = document.getElementById('p-content').value;
+      const excerpt = document.getElementById('p-excerpt').value;
+      const status = document.getElementById('p-status').value;
+      const msg = document.getElementById('p-msg');
+
+      if(!title || !content || !excerpt) return alert("Title, Excerpt, and Content are strictly required.");
+      msg.style.color = "var(--primary)";
+      msg.innerText = "Saving to database...";
+
+      let rawSlug = document.getElementById('p-slug').value || document.getElementById('p-title-en').value || title;
+      let slug = rawSlug.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '').toLowerCase() || 'post-'+Date.now();
+
+      const payload = { 
+        title, title_en: document.getElementById('p-title-en').value,
+        category: document.getElementById('p-category').value, slug, excerpt, content, status, 
+        seo_keywords: document.getElementById('p-seo-keywords').value,
+        featured_image: document.getElementById('p-media-url').value,
+        updated_at: new Date().toISOString() 
+      };
+
+      let error;
+      if(id) { 
+        if(status === 'published') {
+           const existing = allPosts.find(p => p.id == id);
+           if(!existing.published_at) payload.published_at = new Date().toISOString();
+        }
+        ({ error } = await db.from('blogs').update(payload).eq('id', id)); 
+      } 
+      else {
+        payload.created_at = new Date().toISOString();
+        if(status === 'published') payload.published_at = payload.created_at;
+        payload.views = 0;
+        ({ error } = await db.from('blogs').insert([payload]));
+      }
+
+      if(error) { msg.style.color = "red"; msg.innerText = error.message; }
+      else { 
+        msg.style.color = "green"; msg.innerText = "Successfully saved! GitHub will rebuild your website."; 
+        setTimeout(()=> { window.location.reload(); }, 2000);
+      }
+    }
+
+    async function uploadHtmlFile() {
+      const title = document.getElementById('u-title').value;
+      const fileInput = document.getElementById('u-file');
+      const excerpt = document.getElementById('u-excerpt').value;
+      const status = document.getElementById('u-status').value;
+      const msg = document.getElementById('u-msg');
+      
+      if(!title || !excerpt || !fileInput.files[0]) return alert("Title, Excerpt, and HTML file are strictly required.");
+
+      msg.style.color = "var(--primary)";
+      msg.innerText = "Extracting HTML securely...";
+      const reader = new FileReader();
+      
+      reader.onload = async function(e) {
+        let content = e.target.result;
+        
+        // Parser-Safe Regex extraction
+        const tag1 = "<bo" + "dy[^>]*>";
+        const tag2 = "<\\/bo" + "dy>";
+        const bodyRegex = new RegExp(tag1 + "([\\s\\S]*?)" + tag2, "i");
+        
+        const bodyMatch = content.match(bodyRegex);
+        if (bodyMatch) content = bodyMatch[1];
+
+        let rawSlug = document.getElementById('u-slug').value || document.getElementById('u-title-en').value || title;
+        let slug = rawSlug.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '').toLowerCase() || 'post-'+Date.now();
+        
+        const payload = { 
+          title, title_en: document.getElementById('u-title-en').value, category: document.getElementById('u-category').value,
+          slug, excerpt, content, status, views: 0, seo_keywords: document.getElementById('u-seo-keywords').value,
+          featured_image: document.getElementById('u-media-url').value, created_at: new Date().toISOString() 
+        };
+        if(status === 'published') payload.published_at = new Date().toISOString();
+
+        msg.innerText = "Saving to database...";
+        const { error } = await db.from('blogs').insert([payload]);
+        if(error) { msg.style.color = "red"; msg.innerText = error.message; }
+        else {
+          msg.style.color = "green"; msg.innerText = "Uploaded successfully! GitHub will rebuild.";
+          setTimeout(()=>{ window.location.reload(); }, 2000);
+        }
+      };
+      reader.readAsText(fileInput.files[0]);
+    }
+
+    function resetBlogForm() {
+      document.getElementById('edit-id').value = '';
+      document.getElementById('p-title').value = '';
+      document.getElementById('p-title-en').value = '';
+      document.getElementById('p-category').value = '';
+      document.getElementById('p-slug').value = '';
+      document.getElementById('p-seo-keywords').value = '';
+      document.getElementById('p-media-url').value = '';
+      document.getElementById('p-img-preview').style.display = 'none';
+      document.getElementById('p-excerpt').value = '';
+      document.getElementById('p-content').value = '';
+      document.getElementById('p-status').value = 'published';
+      document.getElementById('form-title').innerText = "Create New Article";
+    }
+
+    async function deletePost(id) {
+      if(confirm("Are you sure you want to permanently delete this post?")) { await db.from('blogs').delete().eq('id', id); loadBlogs(); }
+    }
+
+    loadBlogs();
   </script>
 </body>
 </html>
