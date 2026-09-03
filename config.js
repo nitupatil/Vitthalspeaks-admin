@@ -4,8 +4,5 @@ const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 const IMAGEBB_API_KEY = '7619c34619679622fd77850f77e13606'; 
 const FULL_SITE_URL = 'https://nitupatil.github.io/newmarathiwebsite';
 
-// ADD YOUR GEMINI API KEY HERE
-const GEMINI_API_KEY = 'AQ.Ab8RN6JlcN6dWraYbqmDKCbvqq6vAMvIxUtpXW_0O9jlLQuBiA'; 
-
 // Initialize the global Supabase client
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
