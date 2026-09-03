@@ -2,94 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Prevents zooming, double-tap delays, and accommodates mobile notches -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <title>Manage Posts - Vitthal Speaks Admin</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    :root { 
-      --bg: #f0f2f5; 
-      --card: #ffffff; 
-      --text: #1e293b; 
-      --muted: #64748b; 
-      --primary: #0f172a; 
-      --accent: #ff9800; 
-      --border: #e2e8f0; 
-      --success: #10b981; 
-      --danger: #ef4444; 
-    }
-    
-    *, *::before, *::after { box-sizing: border-box; }
-    
-    html, body { 
-      width: 100%; 
-      height: 100%; 
-      margin: 0; 
-      padding: 0; 
-      overflow-x: hidden; 
-      overscroll-behavior-x: none; 
-      touch-action: manipulation; 
-    }
-    
-    body { 
-      font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      background: var(--bg); 
-      color: var(--text); 
-      padding-bottom: 70px; 
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    
+    :root { --bg: #f0f2f5; --card: #ffffff; --text: #1e293b; --muted: #64748b; --primary: #0f172a; --accent: #ff9800; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 70px; overflow-x: hidden; }
     a { text-decoration: none; color: inherit; }
     
-    .app-header { 
-      background: var(--primary); 
-      color: white; 
-      padding: 15px 20px; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      position: sticky; 
-      top: 0; 
-      z-index: 100; 
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-      width: 100%;
-    }
+    .app-header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .app-header h1 { margin: 0; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     
-    .container { 
-      max-width: 1000px; 
-      margin: 0 auto; 
-      padding: 15px; 
-      width: 100%; 
-      flex: 1;
-    }
+    .container { max-width: 1000px; margin: 0 auto; padding: 15px; width: 100%; }
     
-    .card { 
-      background: var(--card); padding: 20px; border-radius: 12px; 
-      border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
-      margin-bottom: 20px; width: 100%; 
-    }
-    .card-header { 
-      display: flex; justify-content: space-between; align-items: center; 
-      margin-bottom: 15px; border-bottom: 1px solid var(--border); 
-      padding-bottom: 10px; flex-wrap: wrap; gap: 10px; 
-    }
+    .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 20px; width: 100%; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; gap: 10px; }
     h2 { font-size: 1.2rem; margin: 0; color: var(--primary); }
 
-    .post-tabs { 
-      display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--border); 
-      padding-bottom: 10px; overflow-x: auto; white-space: nowrap; 
-      -webkit-overflow-scrolling: touch; scrollbar-width: none; 
-    }
+    .post-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     .post-tabs::-webkit-scrollbar { display: none; }
-    .post-tab { 
-      background: none; border: none; font-size: 0.95rem; font-weight: 600; 
-      color: var(--muted); cursor: pointer; padding: 8px 12px; border-radius: 8px; transition: 0.2s; 
-    }
+    .post-tab { background: none; border: none; font-size: 0.95rem; font-weight: 600; color: var(--muted); cursor: pointer; padding: 8px 12px; border-radius: 8px; transition: 0.2s; }
     .post-tab.active { background: var(--primary); color: white; }
 
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
@@ -97,17 +32,10 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     .input-group { margin-bottom: 15px; width: 100%; }
-    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--primary); }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--primary-dark); }
     .input-group label span.required { color: var(--danger); }
-    
-    input, textarea, select { 
-      width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; 
-      border-radius: 8px; font-family: inherit; font-size: 16px; 
-      background: #f8fafc; 
-    }
-    input:focus, textarea:focus, select:focus { 
-      outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(255,152,0,0.1); 
-    }
+    input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: #f8fafc; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(255,152,0,0.1); }
 
     .upload-box { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc; transition: 0.2s; }
     .upload-box i { font-size: 28px; color: var(--accent); margin-bottom: 8px; }
@@ -117,39 +45,31 @@
     .seo-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
     .seo-section h3 { font-size: 1rem; margin-top: 0; margin-bottom: 15px; color: var(--primary); }
 
-    .btn { 
-      padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; 
-      border: none; font-size: 0.9rem; transition: 0.2s; display: inline-flex; 
-      align-items: center; justify-content: center; gap: 6px; text-align: center; 
-      white-space: nowrap; 
-      overflow: hidden; 
-      text-overflow: ellipsis; 
-    }
+    /* AI Section Styling */
+    .ai-section { background: linear-gradient(135deg, #f3e8ff, #fae8ff); border: 1px solid #d8b4fe; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(216, 180, 254, 0.2); }
+    .ai-section h3 { margin-top: 0; color: #7e22ce; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+    .ai-input { background: white !important; border-color: #d8b4fe !important; }
+    .btn-ai { background: #9333ea; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .btn-ai:hover { background: #7e22ce; }
+    .btn-ai:disabled { background: #c084fc; cursor: not-allowed; }
+
+    /* Thumbnail Studio Styling */
+    .thumb-studio { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; border-top: 1px dashed var(--border); padding-top: 20px; }
+    .thumb-card { border-radius: 12px; padding: 15px; border: 1px solid; }
+    .thumb-manual { background: #fff8e1; border-color: #fde68a; }
+    .thumb-ai { background: #f3e8ff; border-color: #d8b4fe; }
+
+    .btn { padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; }
     .btn-primary { background: var(--primary); color: white; width: 100%; }
     .btn-action { background: #f1f5f9; color: var(--primary); font-size: 0.8rem; }
-    .btn-warning { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
     .btn-success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
     .btn-delete { background: #fee2e2; color: #dc2626; }
 
-    .list-item { 
-      display: flex; flex-direction: column; gap: 12px; padding: 15px; 
-      border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; 
-      background: #fff; transition: background 0.3s; 
-    }
+    .list-item { display: flex; flex-direction: column; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; background: #fff; transition: background 0.3s; }
     .item-title { font-weight: 700; color: var(--primary); font-size: 1.05rem; margin-bottom: 6px; line-height: 1.4; }
     .item-meta { font-size: 0.85rem; color: var(--muted); font-weight: 500; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-    
-    .item-actions { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); 
-      gap: 8px; 
-      width: 100%; 
-    }
-    .item-actions .btn { 
-      padding: 8px; 
-      font-size: 0.8rem; 
-      width: 100%; 
-    }
+    .item-actions { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+    .item-actions .btn { flex: 1; min-width: 80px; }
     
     .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
     .badge.published { background: #dcfce7; color: #059669; border: 1px solid #a7f3d0; }
@@ -158,52 +78,37 @@
     .status-msg { text-align: center; font-weight: 600; margin-top: 10px; }
 
     /* Full Screen Preview Modal */
-    .modal-overlay { 
-      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-      background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 0; 
-    }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 0; }
     .modal-content { background: white; width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     .modal-header { padding: 15px 20px; background: #001f3f; color: white; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10; }
     .modal-body { padding: 0; flex: 1; background: #f4f6f8; overflow: hidden; }
     .preview-iframe { width: 100%; height: 100%; border: none; background: transparent; }
 
-    /* Mobile App Navigation */
-    .mobile-nav { 
-      position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; 
-      border-top: 1px solid var(--border); display: flex; justify-content: space-around; 
-      padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); 
-      z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); 
-    }
-    .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); background: none; border: none; font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 5px; width: 25%; }
+    .mobile-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
+    .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); background: none; border: none; font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 5px; }
     .nav-item i { font-size: 1.1rem; margin-bottom: 4px; }
     .nav-item.active { color: var(--accent); }
     .desktop-tabs { display: none; }
     
-    /* Desktop Software View */
     @media (min-width: 768px) {
-      body { 
-        padding-bottom: 0; 
-        background: #e2e8f0; 
-      }
-      .app-header { max-width: 1000px; border-radius: 0 0 8px 8px; }
       .mobile-nav { display: none; }
+      body { padding-bottom: 0; }
       .desktop-tabs { display: flex; gap: 10px; }
-      .desktop-tabs .nav-item { flex-direction: row; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; width: auto; }
+      .desktop-tabs .nav-item { flex-direction: row; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; }
       .desktop-tabs .nav-item.active { background: var(--accent); color: white; }
       .desktop-tabs .nav-item i { margin-bottom: 0; margin-right: 8px; font-size: 1rem; }
-      
       .list-item { flex-direction: row; justify-content: space-between; align-items: center; }
-      .item-actions { display: flex; width: auto; flex-wrap: nowrap; }
-      .item-actions .btn { width: auto; padding: 10px 14px; font-size: 0.9rem; }
+      .item-actions { width: auto; flex-wrap: nowrap; }
       .btn-primary { width: auto; }
-      .form-actions { display: flex; gap: 10px; flex-direction: row !important; }
+      .form-actions { display: flex; gap: 10px; }
+      .thumb-studio { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
 <body>
 
   <header class="app-header">
-    <h1><span class="live-dot" style="background:#10b981; width:10px; height:10px; border-radius:50%; display:inline-block; box-shadow:0 0 8px #10b981;"></span> Vitthal Speaks Admin</h1>
+    <h1><span class="live-dot" style="background:#10b981; width:10px; height:10px; border-radius:50%; display:inline-block;"></span> Vitthal Speaks Admin</h1>
     <div class="desktop-tabs">
       <a href="index.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
       <a href="post.html" class="nav-item active"><i class="fa-solid fa-newspaper"></i> Posts</a>
@@ -219,7 +124,6 @@
       <button class="post-tab" onclick="switchTab('upload-tab', this)"><i class="fa-solid fa-file-code"></i> Upload HTML</button>
     </div>
 
-    <!-- 1. POST LIST TAB -->
     <div id="list-tab" class="tab-content active">
       <div class="card">
         <div class="card-header">
@@ -230,26 +134,69 @@
       </div>
     </div>
 
-    <!-- 2. EDITOR TAB -->
     <div id="editor-tab" class="tab-content">
       <div class="card">
         <div class="card-header">
           <h2 id="form-title">Create New Article</h2>
           <button class="btn btn-action" onclick="resetBlogForm()"><i class="fa-solid fa-rotate-right"></i> Clear Form</button>
         </div>
+        
         <input type="hidden" id="edit-id">
+        <input type="hidden" id="p-media-url">
+
+        <div class="ai-section">
+          <h3>🪄 Generate Text Content with Gemini AI</h3>
+          <p style="font-size: 0.85rem; color: #6b21a8; margin-top: 0; margin-bottom: 12px;">Enter a topic. AI will automatically write the HTML body and generate SEO data.</p>
+          <div class="input-group" style="margin-bottom: 12px;">
+            <input type="text" id="ai-prompt" class="ai-input" placeholder="e.g. Write a Marathi post about the MPSC exam updates 2026...">
+          </div>
+          <button id="btn-ai" class="btn-ai" onclick="generateWithAI()">✨ Generate Blog Content</button>
+
+          <div id="ai-refine-box" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #d8b4fe;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #7e22ce; margin-bottom: 6px;">Modify / Refine Existing Text:</label>
+            <div style="display: flex; gap: 10px;">
+              <input type="text" id="ai-refine-prompt" class="ai-input" style="flex: 1;" placeholder="e.g. Make it longer, add a table, etc.">
+              <button id="btn-ai-refine" class="btn-ai" style="width: auto; padding: 10px 15px;" onclick="refineWithAI()">✨ Apply Fix</button>
+            </div>
+          </div>
+        </div>
+
         <div class="input-group"><label>Title (Marathi) <span class="required">*</span></label><input type="text" id="p-title" placeholder="Enter post title"></div>
-        <div class="input-group"><label>HTML Content <span class="required">*</span></label><textarea id="p-content" rows="12" placeholder="Write your HTML content here..."></textarea></div>
+        <div class="input-group"><label>HTML Content <span class="required">*</span></label><textarea id="p-content" rows="15" placeholder="Write your HTML content here..."></textarea></div>
         <div class="input-group"><label>Short Excerpt <span class="required">*</span></label><input type="text" id="p-excerpt" placeholder="Short preview text"></div>
         
-        <div class="input-group" style="background: #fff8e1; padding: 15px; border-radius: 12px; border: 1px solid #fde68a;">
-          <label style="color: #d97706; font-size: 1rem;"><i class="fa-solid fa-image"></i> Featured Image (Thumbnail)</label>
-          <div class="upload-box" onclick="document.getElementById('p-img-upload').click()" style="background: white; border-color: #fde68a;">
-            <i class="fa-solid fa-cloud-arrow-up" style="color: #d97706;"></i><p style="color: #d97706;">Click to Upload Thumbnail via ImageBB</p>
+        <label style="display: block; font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); margin-top: 25px;"><i class="fa-solid fa-image"></i> Thumbnail Studio</label>
+        <div class="thumb-studio">
+          
+          <div class="thumb-card thumb-manual">
+            <label style="color: #d97706; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 1: Manual Upload</label>
+            <div class="upload-box" onclick="document.getElementById('p-img-upload').click()" style="background: white; border-color: #fde68a; padding: 15px;">
+              <i class="fa-solid fa-cloud-arrow-up" style="color: #d97706; font-size: 20px;"></i><p style="color: #d97706; font-size: 0.8rem;">Click to Upload from Computer</p>
+            </div>
+            <input type="file" id="p-img-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'p-media-url', 'p-img-preview', 'p-msg')">
           </div>
-          <input type="file" id="p-img-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'p-media-url', 'p-img-preview', 'p-msg')">
-          <img id="p-img-preview" class="img-preview">
-          <input type="hidden" id="p-media-url">
+
+          <div class="thumb-card thumb-ai">
+            <label style="color: #7e22ce; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Generate with AI</label>
+            <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8b4fe; font-size:0.85rem; margin-bottom:10px;" placeholder="Visual description for image...">
+            <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Preview Locally</button>
+            
+            <div id="staged-thumb-container" style="display: none; margin-top: 15px; border-top: 1px dashed #d8b4fe; padding-top: 15px;">
+              <p style="font-size: 0.75rem; color: #7e22ce; margin:0 0 5px 0; font-weight:600;">Local Preview (Not Uploaded Yet):</p>
+              <img id="staged-thumb-preview" src="" style="width: 100%; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              
+              <div style="display: flex; gap: 5px;">
+                <button id="btn-use-thumb" class="btn btn-success" style="flex: 2; padding: 8px; font-size: 0.8rem;" onclick="uploadStagedThumbnail()"><i class="fa-solid fa-cloud-arrow-up"></i> Upload & Attach</button>
+                <button class="btn btn-action" style="flex: 1; padding: 8px; font-size: 0.8rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-rotate"></i> Redo</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <p style="font-size: 0.85rem; font-weight: 600; color: var(--muted); margin:0 0 5px 0;">Current Attached Thumbnail:</p>
+          <img id="p-img-preview" class="img-preview" style="max-height: 150px; background: #f1f5f9; border: 1px solid #cbd5e1;">
         </div>
 
         <div class="seo-section">
@@ -262,7 +209,7 @@
 
         <div class="input-group">
           <label>Status</label>
-          <select id="p-status"><option value="published">🟢 Published (Live)</option><option value="draft">🟡 Draft (Hidden)</option></select>
+          <select id="p-status"><option value="published">🟢 Published (Live)</option><option value="draft" selected>🟡 Draft (Hidden)</option></select>
         </div>
         <div class="form-actions" style="display: flex; gap: 10px; flex-direction: column;">
           <button class="btn btn-action" style="width: 100%; padding: 12px; border: 1px solid var(--primary);" onclick="previewEditor()"><i class="fa-solid fa-eye"></i> Full Screen Preview</button>
@@ -272,7 +219,6 @@
       </div>
     </div>
 
-    <!-- 3. HTML UPLOAD TAB -->
     <div id="upload-tab" class="tab-content">
       <div class="card">
         <h2>Upload HTML File</h2>
@@ -308,7 +254,6 @@
     </div>
   </div>
 
-  <!-- FULL SCREEN REALISTIC PREVIEW MODAL -->
   <div class="modal-overlay" id="preview-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -330,6 +275,7 @@
 
   <script>
     let allPosts = [];
+    let stagedThumbnailBlob = null;
 
     const LIVE_SITE_CSS = "@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&display=swap'); body { font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif; background: #f4f6f8; color: #1e293b; line-height: 1.7; margin: 0; padding: 20px; } .container { max-width: 1000px; margin: 0 auto; } .article-card { background: #ffffff; border-radius: 12px; padding: 35px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; } .article-title { font-size: 2.2rem; font-weight: 800; color: #000000; line-height: 1.3; margin: 0 0 15px; } .article-content { font-size: 1.15rem; line-height: 1.8; color: #333; overflow-wrap: break-word; } .article-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); } @media (max-width: 768px) { body { padding: 0; background: #fff; } .article-card { padding: 20px 16px; border: none; border-radius: 0; box-shadow: none; } .article-title { font-size: 1.8rem; } }";
 
@@ -357,11 +303,7 @@
               </div>
             </div>
             <div class="item-actions">
-              ${post.status === 'published' 
-                ? `<button class="btn btn-warning" onclick="toggleStatus(${post.id}, 'draft')"><i class="fa-solid fa-eye-slash"></i> Unpublish</button>`
-                : `<button class="btn btn-success" onclick="toggleStatus(${post.id}, 'published')"><i class="fa-solid fa-check"></i> Publish</button>`
-              }
-              <button class="btn btn-action" onclick="openPreview(${post.id})"><i class="fa-solid fa-desktop"></i> Preview</button>
+              <button class="btn btn-action" onclick="openPreview(${post.id})"><i class="fa-solid fa-desktop"></i> View</button>
               <button class="btn btn-action" onclick="copyLink('${post.slug}')"><i class="fa-solid fa-share-nodes"></i> Link</button>
               <button class="btn btn-action" onclick="editPost(${post.id})"><i class="fa-solid fa-pen"></i> Edit</button>
               <button class="btn btn-delete" onclick="deletePost(${post.id})"><i class="fa-solid fa-trash"></i></button>
@@ -376,26 +318,12 @@
         if (payload.eventType === 'UPDATE') {
           const viewEl = document.getElementById('view-count-' + payload.new.id);
           if (viewEl) viewEl.innerText = payload.new.views;
-          
           const index = allPosts.findIndex(p => p.id === payload.new.id);
           if (index !== -1) allPosts[index] = payload.new;
-          
         } else {
-          if(document.getElementById('list-tab').classList.contains('active')) {
-            loadBlogs();
-          }
+          if(document.getElementById('list-tab').classList.contains('active')) loadBlogs();
         }
       }).subscribe();
-
-    async function toggleStatus(id, newStatus) {
-      const payload = { status: newStatus, updated_at: new Date().toISOString() };
-      if(newStatus === 'published') {
-        const post = allPosts.find(p => p.id === id);
-        if(!post.published_at) payload.published_at = new Date().toISOString();
-      }
-      await db.from('blogs').update(payload).eq('id', id);
-      loadBlogs();
-    }
 
     function copyLink(slug) {
       const url = `${FULL_SITE_URL}/${slug}`;
@@ -410,14 +338,23 @@
       const p3 = "<" + "/h1><div class='article-content'>";
       const p4 = "<" + "/div><" + "/div><" + "/div><" + "/bo" + "dy><" + "/ht" + "ml>";
       
-      const docStr = p1 + LIVE_SITE_CSS + p2 + safeTitle + p3 + content + p4;
+      let thumbHtml = '';
+      const currentThumb = document.getElementById('p-media-url').value;
+      if(currentThumb) {
+         thumbHtml = `<img src="${currentThumb}" style="width:100%; border-radius:8px; margin-bottom:20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">`;
+      }
+
+      const docStr = p1 + LIVE_SITE_CSS + p2 + safeTitle + p3 + thumbHtml + content + p4;
       document.getElementById('preview-iframe').srcdoc = docStr;
       document.getElementById('preview-modal').style.display = 'flex';
     }
 
     function openPreview(id) {
       const post = allPosts.find(p => p.id === id);
-      if(post) injectPreview(post.title, post.content);
+      if(post) {
+         document.getElementById('p-media-url').value = post.featured_image || '';
+         injectPreview(post.title, post.content);
+      }
     }
 
     function previewEditor() {
@@ -426,11 +363,201 @@
       injectPreview(title, content);
     }
 
+    // ==========================================
+    // AUTO-RETRY FETCH LOGIC
+    // ==========================================
+    async function fetchWithRetry(url, options, retries = 3) {
+      for (let i = 0; i < retries; i++) {
+        const response = await fetch(url, options);
+        if (response.ok) return response;
+        if (response.status === 503) {
+          if (i === retries - 1) throw new Error("Google API is currently overloaded with global traffic (503). Please wait a few minutes and try again.");
+          // Wait exponentially: 2s, 4s, etc.
+          await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+          continue;
+        }
+        const errText = await response.text();
+        throw new Error(`Google API Error: ${response.status} - ${errText}`);
+      }
+    }
+
+    // ==========================================
+    // GEMINI AI INTEGRATION
+    // ==========================================
+    async function generateWithAI() {
+      const prompt = document.getElementById('ai-prompt').value;
+      const aiBtn = document.getElementById('btn-ai');
+
+      if (!prompt) return alert("Please enter a topic for the AI to generate.");
+      if (typeof GEMINI_API_KEY === 'undefined' || !GEMINI_API_KEY) return alert("Error: GEMINI_API_KEY is missing in config.js.");
+
+      aiBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating Post Structure...';
+      aiBtn.disabled = true;
+
+      const systemInstruction = `You are an expert Marathi blog writer. Write a high-quality, SEO-optimized blog post in Marathi about: "${prompt}".
+      IMPORTANT: Respond ONLY with a valid JSON object. Do not include markdown code blocks. Use these exact keys:
+      {
+        "title": "Catchy title in Marathi",
+        "title_en": "English translation of the title",
+        "excerpt": "A short 2-sentence summary in Marathi",
+        "keywords": "comma, separated, seo, tags",
+        "thumbnail_prompt": "A brief English visual description for an AI image generator to create a thumbnail image for this post (e.g., 'A modern office desk with papers and laptop')",
+        "content": "The full blog body formatted in raw HTML. Use <h2>, <p>, <ul>, <li>, and <strong> tags. Do not use HTML or Body tags."
+      }`;
+
+      try {
+        const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemInstruction }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+
+        let resultText = data.candidates[0].content.parts[0].text;
+        resultText = resultText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const aiData = JSON.parse(resultText);
+
+        document.getElementById('p-title').value = aiData.title;
+        document.getElementById('p-title-en').value = aiData.title_en;
+        document.getElementById('p-excerpt').value = aiData.excerpt;
+        document.getElementById('p-seo-keywords').value = aiData.keywords;
+        document.getElementById('p-content').value = aiData.content;
+        document.getElementById('p-slug').value = aiData.title_en.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        document.getElementById('p-status').value = 'draft';
+
+        document.getElementById('ai-thumb-prompt').value = aiData.thumbnail_prompt || aiData.title_en;
+
+        alert("Text Content generated successfully! You can now scroll down to the Thumbnail Studio to generate an image.");
+      } catch (err) {
+        console.error(err); 
+        alert("AI Generation failed. \n\nError details: " + err.message);
+      } finally {
+        aiBtn.innerHTML = '✨ Generate Blog Content';
+        aiBtn.disabled = false;
+      }
+    }
+
+    async function refineWithAI() {
+      const refinePrompt = document.getElementById('ai-refine-prompt').value;
+      const currentContent = document.getElementById('p-content').value;
+      const refineBtn = document.getElementById('btn-ai-refine');
+
+      if (!refinePrompt || !currentContent) return alert("Please enter both current content and refinement instructions.");
+      
+      refineBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
+      refineBtn.disabled = true;
+
+      const systemInstruction = `You are an expert Marathi blog editor. The user wants to modify the following HTML content: "${refinePrompt}"
+      Current HTML: ${currentContent}
+      IMPORTANT: Respond ONLY with the completely updated raw HTML. Do not use markdown blocks.`;
+
+      try {
+        const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemInstruction }] }],
+            generationConfig: { responseMimeType: "text/plain" }
+          })
+        });
+        
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+        
+        let newHtml = data.candidates[0].content.parts[0].text;
+        newHtml = newHtml.replace(/^```html/i, '').replace(/```$/i, '').trim();
+        
+        document.getElementById('p-content').value = newHtml;
+        document.getElementById('ai-refine-prompt').value = '';
+      } catch (err) {
+        console.error(err); 
+        alert("Refinement failed. " + err.message);
+      } finally {
+        refineBtn.innerHTML = '✨ Apply Fix';
+        refineBtn.disabled = false;
+      }
+    }
+
+    // ==========================================
+    // THUMBNAIL STUDIO LOGIC
+    // ==========================================
+
+    async function generateAIThumbnail() {
+      const prompt = document.getElementById('ai-thumb-prompt').value;
+      if(!prompt) return alert("Please enter an image description first.");
+      
+      const btn = document.getElementById('btn-gen-thumb');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+      btn.disabled = true;
+
+      try {
+        const imagePrompt = encodeURIComponent("High quality flat vector illustration, modern blog thumbnail style, clean background, no text, " + prompt);
+        const seed = Math.floor(Math.random() * 100000);
+        const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=800&height=450&nologo=true&seed=${seed}`;
+        
+        const imgRes = await fetch(imageUrl);
+        if (!imgRes.ok) throw new Error("Failed to fetch image from Pollinations AI");
+        stagedThumbnailBlob = await imgRes.blob();
+        
+        const localUrl = URL.createObjectURL(stagedThumbnailBlob);
+        document.getElementById('staged-thumb-preview').src = localUrl;
+        document.getElementById('staged-thumb-container').style.display = 'block';
+      } catch (e) {
+        console.error(e); 
+        alert("Failed to generate image.");
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Preview Locally';
+        btn.disabled = false;
+      }
+    }
+
+    async function uploadStagedThumbnail() {
+      if(!stagedThumbnailBlob) return;
+      const btn = document.getElementById('btn-use-thumb');
+      const msg = document.getElementById('p-msg');
+      
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
+      btn.disabled = true;
+      msg.style.color = "var(--primary)";
+      msg.innerText = "Uploading generated image to ImageBB...";
+
+      const formData = new FormData();
+      formData.append('image', stagedThumbnailBlob, 'ai-thumbnail.jpg');
+
+      try {
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        if (data && data.success) {
+          document.getElementById('p-media-url').value = data.data.url;
+          document.getElementById('p-img-preview').src = data.data.url;
+          document.getElementById('p-img-preview').style.display = 'block';
+          
+          document.getElementById('staged-thumb-container').style.display = 'none';
+          stagedThumbnailBlob = null;
+          
+          msg.style.color = "var(--success)";
+          msg.innerText = "Thumbnail Uploaded and Attached Successfully!";
+          setTimeout(() => msg.innerText = "", 3000);
+        } else { throw new Error('Upload failed'); }
+      } catch (e) {
+        msg.style.color = "red"; msg.innerText = "Image upload failed!";
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Upload & Attach';
+        btn.disabled = false;
+      }
+    }
+
     async function handleImageUpload(e, hiddenInputId, previewImgId, statusMsgId) {
       const file = e.target.files[0];
       if (!file) return;
       document.getElementById(statusMsgId).style.color = "var(--primary)";
-      document.getElementById(statusMsgId).innerText = "Uploading thumbnail to ImageBB...";
+      document.getElementById(statusMsgId).innerText = "Uploading thumbnail manually...";
       const formData = new FormData(); formData.append('image', file);
       try {
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
@@ -440,12 +567,12 @@
           document.getElementById(previewImgId).src = data.data.url;
           document.getElementById(previewImgId).style.display = 'block';
           document.getElementById(statusMsgId).style.color = "var(--success)";
-          document.getElementById(statusMsgId).innerText = "Thumbnail Uploaded Successfully!";
+          document.getElementById(statusMsgId).innerText = "Manual Upload Successful!";
           setTimeout(() => document.getElementById(statusMsgId).innerText = "", 3000);
         } else { throw new Error('Upload failed'); }
       } catch (err) { 
         document.getElementById(statusMsgId).style.color = "red";
-        document.getElementById(statusMsgId).innerText = "Thumbnail upload failed!"; 
+        document.getElementById(statusMsgId).innerText = "Upload failed!"; 
       }
       e.target.value = '';
     }
@@ -572,9 +699,11 @@
       document.getElementById('p-seo-keywords').value = '';
       document.getElementById('p-media-url').value = '';
       document.getElementById('p-img-preview').style.display = 'none';
+      document.getElementById('staged-thumb-container').style.display = 'none';
+      stagedThumbnailBlob = null;
       document.getElementById('p-excerpt').value = '';
       document.getElementById('p-content').value = '';
-      document.getElementById('p-status').value = 'published';
+      document.getElementById('p-status').value = 'draft';
       document.getElementById('form-title').innerText = "Create New Article";
     }
 
