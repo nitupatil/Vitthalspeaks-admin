@@ -15,8 +15,6 @@
     
     .app-header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .app-header h1 { margin: 0; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .live-dot { width: 10px; height: 10px; background: var(--success); border-radius: 50%; display: inline-block; box-shadow: 0 0 8px var(--success); animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
     
     .container { max-width: 1000px; margin: 0 auto; padding: 15px; width: 100%; }
     
@@ -66,6 +64,7 @@
     
     .status-msg { text-align: center; font-weight: 600; margin-top: 10px; }
 
+    /* Full Screen Preview Modal */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 0; }
     .modal-content { background: white; width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     .modal-header { padding: 15px 20px; background: #001f3f; color: white; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10; }
@@ -95,7 +94,7 @@
 <body>
 
   <header class="app-header">
-    <h1><span class="live-dot"></span> Vitthal Speaks Admin</h1>
+    <h1><span class="live-dot" style="background:#10b981; width:10px; height:10px; border-radius:50%; display:inline-block;"></span> Vitthal Speaks Admin</h1>
     <div class="desktop-tabs">
       <a href="index.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
       <a href="post.html" class="nav-item active"><i class="fa-solid fa-newspaper"></i> Posts</a>
@@ -205,7 +204,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3 style="margin:0; font-size:1.1rem;"><i class="fa-solid fa-desktop"></i> Live Website Preview</h3>
-        <button class="btn btn-action" style="color: var(--primary-dark);" onclick="document.getElementById('preview-modal').style.display='none'"><i class="fa-solid fa-xmark"></i> Close Preview</button>
+        <button class="btn" style="background: #ef4444; color: white; border: none; font-size: 0.9rem;" onclick="document.getElementById('preview-modal').style.display='none'"><i class="fa-solid fa-xmark"></i> Close Preview</button>
       </div>
       <div class="modal-body">
         <iframe id="preview-iframe" class="preview-iframe"></iframe>
@@ -243,8 +242,8 @@
             <div style="flex:1; width: 100%;">
               <div class="item-title">${post.title}</div>
               <div class="item-meta">
-                <span class="badge ${post.status}">${post.status}</span>
-                <span><i class="fa-solid fa-eye" style="color:var(--accent)"></i> ${post.views || 0}</span>
+                <span class="badge ${post.status}" id="status-badge-${post.id}">${post.status}</span>
+                <span><i class="fa-solid fa-eye" style="color:var(--accent)"></i> <span id="view-count-${post.id}">${post.views || 0}</span></span>
                 <span style="word-break: break-all;"><i class="fa-solid fa-link"></i> /${post.slug}</span>
               </div>
             </div>
@@ -263,12 +262,23 @@
       }
     }
 
-    // REAL-TIME UPDATES FOR POSTS LIST
+    // SURGICAL REAL-TIME WEBSOCKET (Updates specific view count without reloading the whole list)
     db.channel('posts-admin-channel')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'blogs' }, payload => {
-        // If we are actively looking at the list, update it in the background
-        if(document.getElementById('list-tab').classList.contains('active')) {
-          loadBlogs();
+        if (payload.eventType === 'UPDATE') {
+          // Instantly update the View Count span if it exists
+          const viewEl = document.getElementById('view-count-' + payload.new.id);
+          if (viewEl) viewEl.innerText = payload.new.views;
+          
+          // Keep our in-memory array up to date so Preview works perfectly
+          const index = allPosts.findIndex(p => p.id === payload.new.id);
+          if (index !== -1) allPosts[index] = payload.new;
+          
+        } else {
+          // Only refresh the full list if a completely NEW post is added or deleted
+          if(document.getElementById('list-tab').classList.contains('active')) {
+            loadBlogs();
+          }
         }
       }).subscribe();
 
@@ -279,6 +289,7 @@
         if(!post.published_at) payload.published_at = new Date().toISOString();
       }
       await db.from('blogs').update(payload).eq('id', id);
+      // We reload here so the "Publish/Unpublish" buttons update visually
       loadBlogs();
     }
 
@@ -288,7 +299,7 @@
       alert("Live Link Copied!\n\n" + url);
     }
 
-    // PARSER-SAFE PREVIEW INJECTION
+    // Parser-Safe String Construction for iFrame
     function injectPreview(title, content) {
       const safeTitle = title.replace(/"/g, '&quot;');
       const p1 = "<!DOCTYPE html><ht" + "ml lang='mr'><he" + "ad><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><sty" + "le>";
