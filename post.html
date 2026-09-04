@@ -3,65 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Database to Groq Tester</title>
+  <title>Test 02 - Groq Diagnostics</title>
   <!-- Load Supabase and your config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <style>
     body { font-family: system-ui, sans-serif; background: #f4f6f8; padding: 20px; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    h2 { margin-top: 0; color: #0f172a; }
+    .container { max-width: 650px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 5px solid #3b82f6; }
+    h2 { margin-top: 0; color: #0f172a; display: flex; justify-content: space-between; align-items: center;}
+    .badge { background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
     .input-group { margin-bottom: 15px; }
     label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
     textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: monospace; box-sizing: border-box; }
     button { background: #9333ea; color: white; border: none; padding: 12px 15px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; font-size: 1rem; }
     button:hover { background: #7e22ce; }
-    pre { background: #1e293b; color: #4ade80; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; min-height: 100px;}
+    pre { background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; min-height: 100px; font-size: 0.9rem; line-height: 1.5;}
+    .success { color: #4ade80; font-weight: bold; }
+    .error { color: #f87171; font-weight: bold; }
+    .info { color: #60a5fa; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>🧪 Test Groq (Via Database)</h2>
-    <p style="font-size: 0.85rem; color: #64748b;">This will pull the key from Supabase and test the Groq connection.</p>
+    <h2>🧪 Groq Deep Diagnostic <span class="badge">Test 02</span></h2>
+    <p style="font-size: 0.85rem; color: #64748b;">This will test 'Mixtral'. If it fails, it will fetch the exact models your API key is allowed to use.</p>
     
     <div class="input-group">
       <label>Test Prompt:</label>
       <textarea id="prompt" rows="3">Write exactly one sentence in Marathi saying "Hello, the AI is working."</textarea>
     </div>
 
-    <button onclick="testGroqFromDB()" id="testBtn">Test Connection</button>
+    <button onclick="runDiagnosticTest()" id="testBtn">Run Diagnostic Test 02</button>
 
     <h3 style="margin-top: 20px; font-size: 1rem;">Live Log:</h3>
     <pre id="output">Waiting to start...</pre>
   </div>
 
   <script>
-    async function testGroqFromDB() {
+    async function runDiagnosticTest() {
       const prompt = document.getElementById('prompt').value.trim();
       const outputBox = document.getElementById('output');
       const btn = document.getElementById('testBtn');
 
-      btn.innerText = "Working...";
+      btn.innerText = "Running Diagnostics...";
       btn.disabled = true;
-      outputBox.style.color = "#fbbf24";
+      outputBox.innerHTML = "<span class='info'>Step 1: Fetching GROQ_API_KEY from database...</span>\n";
 
+      let apiKey = null;
+
+      // STEP 1: DB FETCH
       try {
-        // STEP 1: Get Key from Database
-        outputBox.innerText = "Step 1: Fetching GROQ_API_KEY from Supabase...\n";
-        
-        if (typeof db === 'undefined') {
-            throw new Error("Supabase 'db' is not defined. Check if config.js is loading correctly.");
-        }
+        if (typeof db === 'undefined') throw new Error("Supabase 'db' is not defined.");
+        const { data, error } = await db.rpc('get_secret_key', { secret_name: 'GROQ_API_KEY' });
+        if (error) throw new Error(error.message);
+        if (!data) throw new Error("Key not found in database.");
+        apiKey = data;
+        outputBox.innerHTML += `<span class='success'>✓ Key found: ${apiKey.substring(0, 8)}...</span>\n\n`;
+      } catch (err) {
+        outputBox.innerHTML += `<span class='error'>❌ DB ERROR: ${err.message}</span>`;
+        btn.innerText = "Run Diagnostic Test 02";
+        btn.disabled = false;
+        return;
+      }
 
-        const { data: apiKey, error: dbError } = await db.rpc('get_secret_key', { secret_name: 'GROQ_API_KEY' });
-        
-        if (dbError) throw new Error(`Database Error: ${dbError.message}`);
-        if (!apiKey) throw new Error("Key not found in database.");
-
-        outputBox.innerText += `✓ Key found: ${apiKey.substring(0, 8)}...\n\nStep 2: Sending request to Groq API...\n`;
-
-        // STEP 2: Send Request to Groq using universal model ID
+      // STEP 2: TEST MIXTRAL MODEL
+      outputBox.innerHTML += "<span class='info'>Step 2: Sending request to 'mixtral-8x7b-32768'...</span>\n";
+      try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -69,27 +77,39 @@
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "llama3-8b-8192", // Bulletproof universal model ID
+            model: "mixtral-8x7b-32768",
             messages: [{ role: "user", content: prompt }]
           })
         });
 
         if (!response.ok) {
           const errText = await response.text();
-          throw new Error(`Groq API Error (${response.status}):\n${errText}`);
+          throw new Error(`Status ${response.status}: ${errText}`);
         }
 
         const data = await response.json();
-        
-        // STEP 3: Show Success
-        outputBox.style.color = "#4ade80";
-        outputBox.innerText += `\n✓ SUCCESS! AI Reply:\n\n${data.choices[0].message.content}`;
+        outputBox.innerHTML += `<span class='success'>✓ SUCCESS! Model works. Reply:</span>\n\n${data.choices[0].message.content}`;
 
       } catch (error) {
-        outputBox.style.color = "#ef4444";
-        outputBox.innerText += `\n❌ FAILED:\n${error.message}`;
+        outputBox.innerHTML += `<span class='error'>❌ REQUEST FAILED:\n${error.message}</span>\n\n`;
+        
+        // STEP 3: FALLBACK MODEL SCAN
+        outputBox.innerHTML += "<span class='info'>Step 3: Scanning your account for allowed models...</span>\n";
+        try {
+          const scanRes = await fetch("https://api.groq.com/openai/v1/models", {
+            headers: { "Authorization": `Bearer ${apiKey}` }
+          });
+          
+          if (!scanRes.ok) throw new Error("Failed to load model list.");
+          const scanData = await scanRes.json();
+          
+          const availableModels = scanData.data.map(m => m.id).join('\n - ');
+          outputBox.innerHTML += `\n<span class='success'>✓ YOUR ALLOWED MODELS ARE:</span>\n - ${availableModels}\n\n<span class='info'>-> Copy one of the exact model IDs above and reply with it so we can update the main code!</span>`;
+        } catch (scanErr) {
+          outputBox.innerHTML += `<span class='error'>❌ SCAN FAILED: ${scanErr.message}</span>`;
+        }
       } finally {
-        btn.innerText = "Test Connection";
+        btn.innerText = "Run Diagnostic Test 02";
         btn.disabled = false;
       }
     }
