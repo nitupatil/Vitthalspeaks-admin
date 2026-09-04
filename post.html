@@ -8,8 +8,6 @@
   <script src="config.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700;900&display=swap');
-    
     :root { --bg: #f0f2f5; --card: #ffffff; --text: #1e293b; --muted: #64748b; --primary: #0f172a; --accent: #ff9800; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
     * { box-sizing: border-box; }
     body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 70px; overflow-x: hidden; }
@@ -179,9 +177,9 @@
           </div>
 
           <div class="thumb-card thumb-ai">
-            <label style="color: #7e22ce; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Generate Smart Thumbnail</label>
+            <label style="color: #7e22ce; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Generate Google Imagen 3</label>
             <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8b4fe; font-size:0.85rem; margin-bottom:10px;" placeholder="Background description (e.g. Marathi people in office)...">
-            <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Background & Add Text</button>
+            <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Thumbnail</button>
             
             <div id="staged-thumb-container" style="display: none; margin-top: 15px; border-top: 1px dashed #d8b4fe; padding-top: 15px;">
               <p style="font-size: 0.75rem; color: #7e22ce; margin:0 0 5px 0; font-weight:600;">Local Preview (Not Uploaded Yet):</p>
@@ -503,7 +501,7 @@
     }
 
     // ==========================================
-    // SMART THUMBNAIL STUDIO LOGIC (Canvas Overlay)
+    // NATIVE IMAGEN 3 THUMBNAIL STUDIO LOGIC
     // ==========================================
 
     async function generateAIThumbnail() {
@@ -514,96 +512,53 @@
       if(!marathiTitle) return alert("Please generate the blog post first so we have a Marathi title for the thumbnail.");
       
       const btn = document.getElementById('btn-gen-thumb');
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating Background & Text...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating Native AI Image...';
       btn.disabled = true;
 
       try {
-        // 1. Fetch high-quality background without text
-        const imagePrompt = encodeURIComponent("Cinematic, high quality background image, completely empty on the left side, vibrant colors, Maharashtrian context, " + prompt + ". NO text, NO letters, completely empty space.");
-        const seed = Math.floor(Math.random() * 100000);
-        const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1280&height=720&nologo=true&seed=${seed}`;
-        
-        const imgRes = await fetch(imageUrl);
-        if (!imgRes.ok) throw new Error("Failed to fetch image from Pollinations AI");
-        const bgBlob = await imgRes.blob();
-        
-        // 2. Load background into an Image object
-        const img = new Image();
-        img.crossOrigin = "Anonymous"; // Allows canvas manipulation
-        img.src = URL.createObjectURL(bgBlob);
-        
-        await new Promise((resolve, reject) => {
-           img.onload = resolve;
-           img.onerror = reject;
+        // Constructing a perfect prompt for Google Imagen 3 to natively render the layout and text
+        const fullPrompt = `A professional YouTube thumbnail. Extremely high quality, vibrant colors. Include large, bold, clearly readable Devanagari text exactly reading: "${marathiTitle}". Below the main title, add smaller text details or vector icons. The background features: ${prompt}. Incorporate Marathi people and Maharashtrian cultural elements in a modern, cinematic style.`;
+
+        const requestBody = {
+          instances: [
+            { prompt: fullPrompt }
+          ],
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: "16:9",
+            personGeneration: "allow_adult"
+          }
+        };
+
+        const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict`, {
+          method: 'POST',
+          body: JSON.stringify(requestBody)
         });
 
-        // 3. Setup HTML5 Canvas (1280x720 HD)
-        const canvas = document.createElement('canvas');
-        canvas.width = 1280;
-        canvas.height = 720;
-        const ctx = canvas.getContext('2d');
-
-        // Draw Background
-        ctx.drawImage(img, 0, 0, 1280, 720);
-
-        // Draw Dark Gradient Overlay on the left side for readability
-        const grd = ctx.createLinearGradient(0, 0, 1000, 0);
-        grd.addColorStop(0, "rgba(0,0,0,0.85)");
-        grd.addColorStop(0.5, "rgba(0,0,0,0.5)");
-        grd.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = grd;
-        ctx.fillRect(0, 0, 1280, 720);
-
-        // Draw Accent Graphic (Orange Line)
-        ctx.fillStyle = "#f59e0b"; 
-        ctx.fillRect(50, 150, 12, 120);
-
-        // 4. Draw Marathi Title perfectly using browser fonts
-        ctx.fillStyle = "white";
-        ctx.font = "900 80px 'Noto Sans Devanagari', sans-serif";
-        ctx.textBaseline = "top";
-        ctx.shadowColor = "rgba(0,0,0,0.9)";
-        ctx.shadowBlur = 15;
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 3;
-
-        // Word Wrap logic for Title
-        const words = marathiTitle.split(' ');
-        let line = '';
-        let y = 150;
-        const maxWidth = 750; 
-
-        for(let i=0; i<words.length; i++) {
-            let testLine = line + words[i] + ' ';
-            let metrics = ctx.measureText(testLine);
-            if(metrics.width > maxWidth && i > 0) {
-                ctx.fillText(line.trim(), 85, y);
-                line = words[i] + ' ';
-                y += 110; // Line height
-            } else {
-                line = testLine;
-            }
-        }
-        ctx.fillText(line.trim(), 85, y);
-
-        // 5. Draw Branding Badge at the bottom
-        ctx.font = "bold 35px sans-serif";
-        ctx.fillStyle = "#fde68a";
-        ctx.fillText("VITTHAL SPEAKS", 85, 620);
-
-        // 6. Convert final merged canvas back to Blob
-        stagedThumbnailBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+        const data = await response.json();
         
-        // Show Local Preview
+        if (data.error) throw new Error(data.error.message);
+        if (!data.predictions || !data.predictions[0] || !data.predictions[0].bytesBase64Encoded) {
+            throw new Error("No image data returned from Gemini API.");
+        }
+
+        const base64Data = data.predictions[0].bytesBase64Encoded;
+        const mimeType = data.predictions[0].mimeType || 'image/jpeg';
+        const imgUrl = `data:${mimeType};base64,${base64Data}`;
+        
+        // Convert Base64 data string to an actual Blob for the file upload preview
+        const res = await fetch(imgUrl);
+        stagedThumbnailBlob = await res.blob();
+        
         const localUrl = URL.createObjectURL(stagedThumbnailBlob);
         document.getElementById('staged-thumb-preview').src = localUrl;
         document.getElementById('staged-thumb-container').style.display = 'block';
 
       } catch (e) {
         console.error(e); 
-        alert("Failed to generate smart thumbnail.");
+        alert("Failed to generate smart thumbnail. \n\n" + e.message);
       } finally {
-        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Background & Add Text';
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Thumbnail';
         btn.disabled = false;
       }
     }
