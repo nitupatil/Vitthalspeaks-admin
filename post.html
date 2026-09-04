@@ -461,8 +461,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: systemInstruction + "\n\nTopic: " + prompt }] }],
-          generationConfig: { responseMimeType: "application/json" }
+          contents: [{ parts: [{ text: systemInstruction + "\n\nTopic: " + prompt }] }]
         })
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -478,7 +477,7 @@
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: "llama3-8b-8192", // Bulletproof, ultra-fast Groq model
+          model: "llama3-8b-8192", 
           messages: [
             { role: "system", content: systemInstruction },
             { role: "user", content: prompt }
@@ -503,7 +502,7 @@
 
       const systemInstruction = `You are an expert Marathi blog writer and professional web designer. Write a high-quality, SEO-optimized blog post in Marathi.
       IMPORTANT INSTRUCTIONS:
-      1. Respond ONLY with a valid JSON object. Do not include markdown code blocks. 
+      1. Respond ONLY with a valid JSON object string.
       2. Format the "content" body in modern HTML. 
       3. **PREFIX DESIGN:** ALWAYS begin the "content" HTML with a beautiful, fully-styled highlight box summarizing the post. Use this exact structure: <div style='background-color:#fffbeb; padding:20px; border-left:6px solid #f59e0b; border-radius:8px; margin-bottom:25px; box-shadow:0 4px 6px rgba(0,0,0,0.05); font-size:1.05rem; color:#334155;'><strong style='color:#b45309; font-size:1.15rem; display:block; margin-bottom:8px;'>महत्त्वाची माहिती:</strong>[Your summary here]</div>
       4. Use attractive inline CSS for headings (<h2>), lists (<ul>), and paragraphs to make it look premium.
@@ -514,34 +513,34 @@
         "title_en": "English translation of the title",
         "excerpt": "A short 2-sentence summary in Marathi",
         "keywords": "comma, separated, seo, tags",
-        "thumbnail_prompt": "A brief English visual description for the background of a YouTube thumbnail (e.g., 'A beautiful Maharashtrian family in a modern home').",
-        "content": "The full blog HTML starting with the beautiful highlight box described above. Do not use <html> or <body> tags."
+        "thumbnail_prompt": "A brief English visual description for the background of a YouTube thumbnail.",
+        "content": "The full blog HTML starting with the beautiful highlight box described above."
       }`;
 
       let resultText = null;
       let usedProvider = "";
 
-      // Step 1: Gemini Flash (Fastest)
-      updateTimeline("Connecting to Google Gemini Flash...");
+      // Step 1: Gemini (Stable version)
+      updateTimeline("Connecting to Google Gemini...");
       try {
         const geminiKey = await getSecret('GEMINI_API_KEY');
         if (!geminiKey) throw new Error("Key missing");
-        resultText = await fetchGemini('gemini-1.5-flash-latest', geminiKey, systemInstruction, prompt);
+        resultText = await fetchGemini('gemini-1.5-flash', geminiKey, systemInstruction, prompt);
         updateTimeline(null, 'success');
-        usedProvider = "Gemini Flash";
+        usedProvider = "Gemini";
       } catch(err) {
         updateTimeline(null, 'error');
       }
 
       // Step 2: Groq Llama 3 (Fallback)
       if (!resultText) {
-        updateTimeline("Falling back to Groq (Llama-3)...");
+        updateTimeline("Falling back to Groq Llama 3...");
         try {
           const groqKey = await getSecret('GROQ_API_KEY');
           if (!groqKey) throw new Error("Key missing");
           resultText = await fetchGroq(groqKey, systemInstruction, prompt);
           updateTimeline(null, 'success');
-          usedProvider = "Groq (Llama-3)";
+          usedProvider = "Groq Llama 3";
         } catch(err) {
           updateTimeline(null, 'error');
         }
@@ -549,9 +548,9 @@
 
       // Step 3: Final Processing
       if (!resultText) {
-        updateTimeline("All AI engines are busy. Please try again later.", 'error');
+        updateTimeline("All AI engines are busy. Check your API Keys.", 'error');
         aiBtn.disabled = false;
-        setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3000);
+        setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3500);
         return;
       }
 
@@ -577,7 +576,7 @@
         }, 1200);
 
       } catch (parseErr) {
-        updateTimeline("JSON format error. Please try again.", 'error');
+        updateTimeline("AI Output format error. Please try again.", 'error');
         aiBtn.disabled = false;
         setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3000);
       }
@@ -619,7 +618,7 @@
         showToast("Content refined successfully via Groq!");
       } catch (err) {
         console.error(err); 
-        showToast("Refinement failed.", "error");
+        showToast("Refinement failed. Check API Keys.", "error");
       } finally {
         refineBtn.innerHTML = '✨ Apply Fix';
         refineBtn.disabled = false;
