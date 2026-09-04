@@ -2,93 +2,888 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test 03 - Gemini Diagnostics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>Manage Posts - Vitthal Speaks Admin</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { font-family: system-ui, sans-serif; background: #f4f6f8; padding: 20px; color: #333; }
-    .container { max-width: 650px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 5px solid #10b981; }
-    h2 { margin-top: 0; color: #0f172a; display: flex; justify-content: space-between; align-items: center;}
-    .badge { background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
-    button { background: #2563eb; color: white; border: none; padding: 12px 15px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; font-size: 1rem; }
-    button:hover { background: #1d4ed8; }
-    pre { background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; min-height: 200px; font-size: 0.9rem; line-height: 1.5;}
-    .success { color: #4ade80; font-weight: bold; }
-    .error { color: #f87171; font-weight: bold; }
-    .info { color: #60a5fa; }
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700;900&display=swap');
+    
+    :root { --bg: #f0f2f5; --card: #ffffff; --text: #1e293b; --muted: #64748b; --primary: #0f172a; --accent: #ff9800; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 70px; overflow-x: hidden; }
+    a { text-decoration: none; color: inherit; }
+    
+    .app-header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .app-header h1 { margin: 0; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    
+    .container { max-width: 1000px; margin: 0 auto; padding: 15px; width: 100%; }
+    
+    .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 20px; width: 100%; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+    h2 { font-size: 1.2rem; margin: 0; color: var(--primary); }
+
+    .post-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .post-tabs::-webkit-scrollbar { display: none; }
+    .post-tab { background: none; border: none; font-size: 0.95rem; font-weight: 600; color: var(--muted); cursor: pointer; padding: 8px 12px; border-radius: 8px; transition: 0.2s; }
+    .post-tab.active { background: var(--primary); color: white; }
+
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .input-group { margin-bottom: 15px; width: 100%; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--primary-dark); }
+    .input-group label span.required { color: var(--danger); }
+    input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: #f8fafc; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(255,152,0,0.1); }
+
+    .upload-box { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc; transition: 0.2s; }
+    .upload-box i { font-size: 28px; color: var(--accent); margin-bottom: 8px; }
+    .upload-box p { margin: 0; font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+    .img-preview { width: 100%; max-height: 250px; object-fit: contain; border-radius: 8px; margin-top: 12px; display: none; background: #000; }
+
+    .seo-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+    .seo-section h3 { font-size: 1rem; margin-top: 0; margin-bottom: 15px; color: var(--primary); }
+
+    /* AI Section Styling */
+    .ai-section { background: linear-gradient(135deg, #e0f2fe, #dbeafe); border: 1px solid #93c5fd; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15); }
+    .ai-section h3 { margin-top: 0; color: #1e3a8a; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+    .ai-input { background: white !important; border-color: #93c5fd !important; }
+    .btn-ai { background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .btn-ai:hover { background: #1d4ed8; }
+    .btn-ai:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    /* Thumbnail Studio Styling */
+    .thumb-studio { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; border-top: 1px dashed var(--border); padding-top: 20px; }
+    .thumb-card { border-radius: 12px; padding: 15px; border: 1px solid; }
+    .thumb-manual { background: #fff8e1; border-color: #fde68a; }
+    .thumb-ai { background: #e0f2fe; border-color: #93c5fd; }
+
+    .btn { padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+    .btn-primary { background: var(--primary); color: white; width: 100%; }
+    .btn-action { background: #f1f5f9; color: var(--primary); font-size: 0.8rem; }
+    .btn-success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+    .btn-delete { background: #fee2e2; color: #dc2626; }
+
+    .list-item { display: flex; flex-direction: column; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; background: #fff; transition: background 0.3s; }
+    .item-title { font-weight: 700; color: var(--primary); font-size: 1.05rem; margin-bottom: 6px; line-height: 1.4; }
+    .item-meta { font-size: 0.85rem; color: var(--muted); font-weight: 500; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .item-actions { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+    .item-actions .btn { flex: 1; min-width: 80px; }
+    
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+    .badge.published { background: #dcfce7; color: #059669; border: 1px solid #a7f3d0; }
+    .badge.draft { background: #fef9c3; color: #d97706; border: 1px solid #fde68a; }
+    
+    /* Custom Toast Notification */
+    .toast-container { position: fixed; top: 20px; right: -400px; background: white; border-left: 6px solid var(--success); box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 15px 25px; border-radius: 8px; display: flex; align-items: center; gap: 15px; z-index: 9999; transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .toast-container.show { right: 20px; }
+    .toast-container.error { border-left-color: var(--danger); }
+    .toast-icon { background: #dcfce7; color: var(--success); width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .toast-container.error .toast-icon { background: #fee2e2; color: var(--danger); }
+    .toast-message { font-weight: 600; font-size: 0.95rem; color: var(--primary); line-height: 1.4; }
+
+    /* Modern AI Processing Timeline Overlay */
+    #ai-processing-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.92); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; }
+    .timeline-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 90%; max-width: 450px; text-align: left; border: 1px solid var(--border); }
+    .timeline-card h2 { margin-top: 0; color: var(--primary); font-size: 1.4rem; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; justify-content: center; }
+    #ai-timeline { list-style: none; padding: 0; margin: 0; font-size: 1rem; color: var(--muted); font-weight: 500; }
+    #ai-timeline li { margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+
+    /* Full Screen Preview Modal */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 0; }
+    .modal-content { background: white; width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    .modal-header { padding: 15px 20px; background: #001f3f; color: white; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10; }
+    .modal-body { padding: 0; flex: 1; background: #f4f6f8; overflow: hidden; }
+    .preview-iframe { width: 100%; height: 100%; border: none; background: transparent; }
+
+    .mobile-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
+    .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); background: none; border: none; font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 5px; }
+    .nav-item i { font-size: 1.1rem; margin-bottom: 4px; }
+    .nav-item.active { color: var(--accent); }
+    .desktop-tabs { display: none; }
+    
+    @media (min-width: 768px) {
+      .mobile-nav { display: none; }
+      body { padding-bottom: 0; }
+      .desktop-tabs { display: flex; gap: 10px; }
+      .desktop-tabs .nav-item { flex-direction: row; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; }
+      .desktop-tabs .nav-item.active { background: var(--accent); color: white; }
+      .desktop-tabs .nav-item i { margin-bottom: 0; margin-right: 8px; font-size: 1rem; }
+      .list-item { flex-direction: row; justify-content: space-between; align-items: center; }
+      .item-actions { width: auto; flex-wrap: nowrap; }
+      .btn-primary { width: auto; }
+      .form-actions { display: flex; gap: 10px; }
+      .thumb-studio { grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h2>🧪 Gemini Deep Diagnostic <span class="badge">Test 03</span></h2>
-    <p style="font-size: 0.85rem; color: #64748b;">This will ask Google servers to list every model your AIza key is allowed to use.</p>
-
-    <button onclick="runDiagnosticTest()" id="testBtn">Scan Google Account Models</button>
-
-    <h3 style="margin-top: 20px; font-size: 1rem;">Live Log:</h3>
-    <pre id="output">Waiting to start...</pre>
+  <div id="app-toast" class="toast-container">
+    <div class="toast-icon" id="toast-icon"><i class="fa-solid fa-check"></i></div>
+    <div class="toast-message" id="toast-message">Action Successful!</div>
   </div>
 
+  <div id="ai-processing-overlay">
+    <div class="timeline-card">
+      <h2><i class="fa-solid fa-microchip fa-bounce" style="color: #2563eb;"></i> Gemini AI Working</h2>
+      <ul id="ai-timeline">
+        </ul>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <h1><span class="live-dot" style="background:#10b981; width:10px; height:10px; border-radius:50%; display:inline-block;"></span> Vitthal Speaks Admin</h1>
+    <div class="desktop-tabs">
+      <a href="index.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+      <a href="post.html" class="nav-item active"><i class="fa-solid fa-newspaper"></i> Posts</a>
+      <a href="ads.html" class="nav-item"><i class="fa-solid fa-bullhorn"></i> Ads</a>
+      <a href="enquiry.html" class="nav-item"><i class="fa-solid fa-envelope"></i> Enquiries</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="post-tabs">
+      <button class="post-tab active" onclick="switchTab('list-tab', this)"><i class="fa-solid fa-list"></i> All Posts</button>
+      <button class="post-tab" onclick="switchTab('editor-tab', this)"><i class="fa-solid fa-pen"></i> Write Post</button>
+      <button class="post-tab" onclick="switchTab('upload-tab', this)"><i class="fa-solid fa-file-code"></i> Upload HTML</button>
+    </div>
+
+    <div id="list-tab" class="tab-content active">
+      <div class="card">
+        <div class="card-header">
+          <h2>Live & Draft Posts</h2> 
+          <button class="btn btn-action" onclick="loadBlogs()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+        </div>
+        <div id="blogs-list">Loading posts...</div>
+      </div>
+    </div>
+
+    <div id="editor-tab" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 id="form-title">Create New Article</h2>
+          <button class="btn btn-action" onclick="resetBlogForm()"><i class="fa-solid fa-rotate-right"></i> Clear Form</button>
+        </div>
+        
+        <input type="hidden" id="edit-id">
+        <input type="hidden" id="p-media-url">
+
+        <div class="ai-section">
+          <h3>🪄 Generate Content with Google Gemini</h3>
+          <p style="font-size: 0.85rem; color: #1e3a8a; margin-top: 0; margin-bottom: 12px;">Cascades securely through the best available models to ensure rapid generation.</p>
+          <div class="input-group" style="margin-bottom: 12px;">
+            <input type="text" id="ai-prompt" class="ai-input" placeholder="e.g. Write a detailed Marathi post about PM Kisan Yojana...">
+          </div>
+          <button id="btn-ai" class="btn-ai" onclick="generateWithAI()">✨ Generate Blog Content</button>
+
+          <div id="ai-refine-box" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #93c5fd;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e3a8a; margin-bottom: 6px;">Modify / Refine Existing Text:</label>
+            <div style="display: flex; gap: 10px;">
+              <input type="text" id="ai-refine-prompt" class="ai-input" style="flex: 1;" placeholder="e.g. Expand on the eligibility criteria...">
+              <button id="btn-ai-refine" class="btn-ai" style="width: auto; padding: 10px 15px;" onclick="refineWithAI()">✨ Apply Fix</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group"><label>Title (Marathi) <span class="required">*</span></label><input type="text" id="p-title" placeholder="Enter post title"></div>
+        <div class="input-group"><label>HTML Content <span class="required">*</span></label><textarea id="p-content" rows="15" placeholder="Write your HTML content here..."></textarea></div>
+        <div class="input-group"><label>Short Excerpt <span class="required">*</span></label><input type="text" id="p-excerpt" placeholder="Short preview text"></div>
+        
+        <label style="display: block; font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); margin-top: 25px;"><i class="fa-solid fa-image"></i> Thumbnail Studio</label>
+        <div class="thumb-studio">
+          
+          <div class="thumb-card thumb-manual">
+            <label style="color: #d97706; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 1: Manual Upload</label>
+            <div class="upload-box" onclick="document.getElementById('p-img-upload').click()" style="background: white; border-color: #fde68a; padding: 15px;">
+              <i class="fa-solid fa-cloud-arrow-up" style="color: #d97706; font-size: 20px;"></i><p style="color: #d97706; font-size: 0.8rem;">Click to Upload from Computer</p>
+            </div>
+            <input type="file" id="p-img-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'p-media-url', 'p-img-preview', 'p-msg')">
+          </div>
+
+          <div class="thumb-card thumb-ai">
+            <label style="color: #2563eb; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Smart YouTube Thumbnail</label>
+            <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #93c5fd; font-size:0.85rem; margin-bottom:10px;" placeholder="Describe the subject (e.g. Maharashtrian family)...">
+            <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Design</button>
+            
+            <div id="staged-thumb-container" style="display: none; margin-top: 15px; border-top: 1px dashed #93c5fd; padding-top: 15px;">
+              <p style="font-size: 0.75rem; color: #2563eb; margin:0 0 5px 0; font-weight:600;">Local Preview (Not Uploaded Yet):</p>
+              <img id="staged-thumb-preview" src="" style="width: 100%; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              
+              <div style="display: flex; gap: 5px;">
+                <button id="btn-use-thumb" class="btn btn-success" style="flex: 2; padding: 8px; font-size: 0.8rem;" onclick="uploadStagedThumbnail()"><i class="fa-solid fa-cloud-arrow-up"></i> Upload & Attach</button>
+                <button class="btn btn-action" style="flex: 1; padding: 8px; font-size: 0.8rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-rotate"></i> Redo</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <p style="font-size: 0.85rem; font-weight: 600; color: var(--muted); margin:0 0 5px 0;">Current Attached Thumbnail:</p>
+          <img id="p-img-preview" class="img-preview" style="max-height: 150px; background: #f1f5f9; border: 1px solid #cbd5e1;">
+        </div>
+
+        <div class="seo-section">
+          <h3><i class="fa-solid fa-magnifying-glass-chart"></i> Advanced SEO Settings</h3>
+          <div class="input-group"><label>English Title</label><input type="text" id="p-title-en" placeholder="e.g. Ladki Bahin Yojana"></div>
+          <div class="input-group"><label>Category</label><input type="text" id="p-category" placeholder="e.g. शासकीय योजना"></div>
+          <div class="input-group"><label>URL Slug</label><input type="text" id="p-slug" placeholder="e.g. ladki-bahin-yojana"></div>
+          <div class="input-group"><label>SEO Keywords</label><input type="text" id="p-seo-keywords" placeholder="yojana, maharashtra"></div>
+        </div>
+
+        <div class="input-group">
+          <label>Status</label>
+          <select id="p-status"><option value="published">🟢 Published (Live)</option><option value="draft" selected>🟡 Draft (Hidden)</option></select>
+        </div>
+        <div class="form-actions" style="display: flex; gap: 10px; flex-direction: column;">
+          <button class="btn btn-action" style="width: 100%; padding: 12px; border: 1px solid var(--primary);" onclick="previewEditor()"><i class="fa-solid fa-eye"></i> Full Screen Preview</button>
+          <button class="btn btn-primary" style="width: 100%; padding: 12px;" onclick="savePost()"><i class="fa-solid fa-cloud-arrow-up"></i> Save Post to Database</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="upload-tab" class="tab-content">
+      <div class="card">
+        <h2>Upload HTML File</h2>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 20px;">Upload a pre-written .html file. The system will extract the body securely.</p>
+        
+        <div class="input-group"><label>Title (Marathi) <span class="required">*</span></label><input type="text" id="u-title" placeholder="Enter article title"></div>
+        <div class="input-group"><label>Short Excerpt <span class="required">*</span></label><input type="text" id="u-excerpt" placeholder="Short description"></div>
+        
+        <div class="input-group" style="background: #fff8e1; padding: 15px; border-radius: 12px; border: 1px solid #fde68a;">
+          <label style="color: #d97706; font-size: 1rem;"><i class="fa-solid fa-image"></i> Featured Image (Thumbnail)</label>
+          <div class="upload-box" onclick="document.getElementById('u-img-upload').click()" style="background: white; border-color: #fde68a;">
+            <i class="fa-solid fa-cloud-arrow-up" style="color: #d97706;"></i><p style="color: #d97706;">Click to Upload Thumbnail</p>
+          </div>
+          <input type="file" id="u-img-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'u-media-url', 'u-img-preview', 'u-msg')">
+          <img id="u-img-preview" class="img-preview">
+          <input type="hidden" id="u-media-url">
+        </div>
+
+        <div class="seo-section">
+          <h3><i class="fa-solid fa-magnifying-glass-chart"></i> Advanced SEO Settings</h3>
+          <div class="input-group"><label>English Title</label><input type="text" id="u-title-en" placeholder="e.g. MPSC Update"></div>
+          <div class="input-group"><label>Category</label><input type="text" id="u-category" placeholder="e.g. नोकरी"></div>
+          <div class="input-group"><label>URL Slug</label><input type="text" id="u-slug" placeholder="e.g. mpsc-update"></div>
+          <div class="input-group"><label>SEO Keywords</label><input type="text" id="u-seo-keywords" placeholder="mpsc, maharashtra"></div>
+        </div>
+
+        <div class="input-group"><label>Select .html File <span class="required">*</span></label><input type="file" id="u-file" accept=".html" style="background: white; padding: 15px;"></div>
+        <div class="input-group"><label>Status</label><select id="u-status"><option value="published">🟢 Published (Live)</option><option value="draft">🟡 Draft (Hidden)</option></select></div>
+        
+        <button class="btn btn-primary" onclick="uploadHtmlFile()" style="width: 100%; padding: 12px;"><i class="fa-solid fa-upload"></i> Extract & Publish</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="preview-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin:0; font-size:1.1rem;"><i class="fa-solid fa-desktop"></i> Live Website Preview</h3>
+        <button class="btn" style="background: #ef4444; color: white; border: none; font-size: 0.9rem;" onclick="document.getElementById('preview-modal').style.display='none'"><i class="fa-solid fa-xmark"></i> Close Preview</button>
+      </div>
+      <div class="modal-body">
+        <iframe id="preview-iframe" class="preview-iframe"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <nav class="mobile-nav">
+    <a href="index.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i>Home</a>
+    <a href="post.html" class="nav-item active"><i class="fa-solid fa-newspaper"></i>Posts</a>
+    <a href="ads.html" class="nav-item"><i class="fa-solid fa-bullhorn"></i>Ads</a>
+    <a href="enquiry.html" class="nav-item"><i class="fa-solid fa-envelope"></i>Enquiries</a>
+  </nav>
+
   <script>
-    async function runDiagnosticTest() {
-      const outputBox = document.getElementById('output');
-      const btn = document.getElementById('testBtn');
+    let allPosts = [];
+    let stagedThumbnailBlob = null;
+    let toastTimeout;
 
-      btn.innerText = "Scanning Google Servers...";
-      btn.disabled = true;
-      outputBox.innerHTML = "<span class='info'>Step 1: Fetching GEMINI_API_KEY from database...</span>\n";
+    // Toast Notification System
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('app-toast');
+      const icon = document.getElementById('toast-icon');
+      document.getElementById('toast-message').innerText = message;
+      
+      if (type === 'error') {
+        toast.classList.add('error');
+        icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+      } else {
+        toast.classList.remove('error');
+        icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+      }
 
-      let apiKey = null;
+      toast.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    const LIVE_SITE_CSS = "@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&display=swap'); body { font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif; background: #f4f6f8; color: #1e293b; line-height: 1.7; margin: 0; padding: 20px; } .container { max-width: 1000px; margin: 0 auto; } .article-card { background: #ffffff; border-radius: 12px; padding: 35px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; } .article-title { font-size: 2.2rem; font-weight: 800; color: #000000; line-height: 1.3; margin: 0 0 15px; } .article-content { font-size: 1.15rem; line-height: 1.8; color: #333; overflow-wrap: break-word; } .article-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); } @media (max-width: 768px) { body { padding: 0; background: #fff; } .article-card { padding: 20px 16px; border: none; border-radius: 0; box-shadow: none; } .article-title { font-size: 1.8rem; } }";
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.post-tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    async function loadBlogs() {
+      const list = document.getElementById('blogs-list');
+      list.innerHTML = "<div style='text-align:center; padding: 20px;'><i class='fa-solid fa-spinner fa-spin'></i> Loading Database...</div>";
+      const { data } = await db.from('blogs').select('*').order('created_at', { ascending: false });
+      if(data) {
+        allPosts = data;
+        list.innerHTML = data.map(post => `
+          <div class="list-item">
+            <div style="flex:1; width: 100%;">
+              <div class="item-title">${post.title}</div>
+              <div class="item-meta">
+                <span class="badge ${post.status}" id="status-badge-${post.id}">${post.status}</span>
+                <span><i class="fa-solid fa-eye" style="color:var(--accent)"></i> <span id="view-count-${post.id}">${post.views || 0}</span></span>
+                <span style="word-break: break-all;"><i class="fa-solid fa-link"></i> /${post.slug}</span>
+              </div>
+            </div>
+            <div class="item-actions">
+              <button class="btn btn-action" onclick="openPreview(${post.id})"><i class="fa-solid fa-desktop"></i> View</button>
+              <button class="btn btn-action" onclick="copyLink('${post.slug}')"><i class="fa-solid fa-share-nodes"></i> Link</button>
+              <button class="btn btn-action" onclick="editPost(${post.id})"><i class="fa-solid fa-pen"></i> Edit</button>
+              <button class="btn btn-delete" onclick="deletePost(${post.id})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    db.channel('posts-admin-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'blogs' }, payload => {
+        if (payload.eventType === 'UPDATE') {
+          const viewEl = document.getElementById('view-count-' + payload.new.id);
+          if (viewEl) viewEl.innerText = payload.new.views;
+          const index = allPosts.findIndex(p => p.id === payload.new.id);
+          if (index !== -1) allPosts[index] = payload.new;
+        } else {
+          if(document.getElementById('list-tab').classList.contains('active')) loadBlogs();
+        }
+      }).subscribe();
+
+    function copyLink(slug) {
+      const url = `${FULL_SITE_URL}/${slug}`;
+      navigator.clipboard.writeText(url);
+      showToast("Live Link Copied to Clipboard!");
+    }
+
+    function injectPreview(title, content) {
+      const safeTitle = title.replace(/"/g, '&quot;');
+      const p1 = "<!DOCTYPE html><ht" + "ml lang='mr'><he" + "ad><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><sty" + "le>";
+      const p2 = "<" + "/sty" + "le><" + "/he" + "ad><bo" + "dy><div class='container'><div class='article-card'><h1 class='article-title'>";
+      const p3 = "<" + "/h1><div class='article-content'>";
+      const p4 = "<" + "/div><" + "/div><" + "/div><" + "/bo" + "dy><" + "/ht" + "ml>";
+      
+      let thumbHtml = '';
+      const currentThumb = document.getElementById('p-media-url').value;
+      if(currentThumb) {
+         thumbHtml = `<img src="${currentThumb}" style="width:100%; border-radius:8px; margin-bottom:20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">`;
+      }
+
+      const docStr = p1 + LIVE_SITE_CSS + p2 + safeTitle + p3 + thumbHtml + content + p4;
+      document.getElementById('preview-iframe').srcdoc = docStr;
+      document.getElementById('preview-modal').style.display = 'flex';
+    }
+
+    function openPreview(id) {
+      const post = allPosts.find(p => p.id === id);
+      if(post) {
+         document.getElementById('p-media-url').value = post.featured_image || '';
+         injectPreview(post.title, post.content);
+      }
+    }
+
+    function previewEditor() {
+      const title = document.getElementById('p-title').value || "Draft Title Preview";
+      const content = document.getElementById('p-content').value || "Start writing to see the preview here...";
+      injectPreview(title, content);
+    }
+
+    // ==========================================
+    // GEMINI AI ENGINE - SEQUENTIAL FALLBACK
+    // ==========================================
+    
+    function updateTimeline(msg, status = "loading") {
+      const ul = document.getElementById('ai-timeline');
+      const activeItem = ul.querySelector('.active-step');
+      
+      if (activeItem) {
+        activeItem.classList.remove('active-step');
+        if (status === 'error') {
+          activeItem.innerHTML = `<i class="fa-solid fa-xmark" style="color: #ef4444; width: 20px;"></i> <span style="text-decoration: line-through;">${activeItem.dataset.msg}</span> <span style="color:#ef4444; font-size:0.8rem; margin-left: 5px;">(Failed)</span>`;
+        } else if (status === 'success') {
+          activeItem.innerHTML = `<i class="fa-solid fa-check" style="color: #10b981; width: 20px;"></i> <span style="color: #10b981; font-weight: 700;">${activeItem.dataset.msg}</span>`;
+        }
+      }
+      
+      if (msg) {
+        const li = document.createElement('li');
+        li.className = 'active-step';
+        li.dataset.msg = msg;
+        li.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="color: #2563eb; width: 20px;"></i> <span style="color: #1e293b; font-weight: 600;">${msg}</span>`;
+        ul.appendChild(li);
+      }
+    }
+
+    async function getSecret(secretName) {
+      const { data, error } = await db.rpc('get_secret_key', { secret_name: secretName });
+      if (error || !data) return null;
+      return data;
+    }
+
+    // Hunts through exactly the models your account is proven to support
+    async function runGeminiRequest(apiKey, systemInstruction, userText) {
+      const modelsToTry = [
+        'gemini-3.8-flash',
+        'gemini-3.6-flash',
+        'gemini-2.5-flash',
+        'gemini-flash-latest'
+      ];
+      
+      for (const model of modelsToTry) {
+        updateTimeline(`Connecting to model: ${model}...`);
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: systemInstruction + "\n\n" + userText }] }]
+            })
+          });
+          
+          if (!res.ok) {
+            console.warn(`Model ${model} failed with status ${res.status}. Moving to next...`);
+            continue; // Fails fast, immediately jumps to the next model
+          }
+          
+          const data = await res.json();
+          return { text: data.candidates[0].content.parts[0].text, usedModel: model };
+        } catch (e) {
+          console.warn(`Network error on ${model}. Moving to next...`);
+          continue; // Moves to next model
+        }
+      }
+      throw new Error("All fallback models failed. Google servers might be busy.");
+    }
+
+    async function generateWithAI() {
+      const prompt = document.getElementById('ai-prompt').value;
+      const aiBtn = document.getElementById('btn-ai');
+      
+      if (!prompt) return showToast("Please enter a topic for the AI to generate.", "error");
+
+      document.getElementById('ai-processing-overlay').style.display = 'flex';
+      document.getElementById('ai-timeline').innerHTML = '';
+      aiBtn.disabled = true;
+
+      // ULTIMATE SYSTEM PROMPT: Strict HTML, Native Marathi, Beautiful Design
+      const systemInstruction = `You are an API. YOU MUST RESPOND ONLY WITH A RAW JSON OBJECT. DO NOT output conversational text, greetings, or markdown blocks. Start exactly with { and end with }.
+      You are an expert Maharashtrian blog writer and Senior UI/UX designer. Write a high-quality, highly engaging, native-sounding, and grammatically flawless blog post in pure, natural Marathi.
+      
+      IMPORTANT INSTRUCTIONS:
+      1. STRICTLY NO MARKDOWN: Never use **bold** or *italic* markdown. You MUST use valid HTML tags like <strong>, <b>, or <em>.
+      2. VECTORS & ICONS: Use FontAwesome v6 icons (e.g., <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>) next to your <h2> tags and inside <li> list items to make it visually rich.
+      3. PREFIX DESIGN: ALWAYS begin the "content" HTML with an attractive highlight box summarizing the post. Use this exact structure: <div style='background-color:#fffbeb; padding:20px; border-left:6px solid #f59e0b; border-radius:12px; margin-bottom:25px; box-shadow:0 4px 15px rgba(0,0,0,0.05); font-family: "Noto Sans Devanagari", sans-serif; font-size:1.1rem; color:#334155; line-height:1.8;'><strong style='color:#b45309; font-size:1.2rem; display:block; margin-bottom:12px;'><i class='fa-solid fa-bell fa-shake'></i> महत्त्वाची माहिती:</strong>[Your engaging summary here]</div>
+      4. BEAUTIFUL UI: Use gorgeous inline CSS for all elements. Add padding, soft backgrounds (#f8fafc, #f0fdf4), rounded corners (border-radius: 8px), and modern shadows (box-shadow) to make paragraphs and data tables pop. Ensure all text uses modern fonts.
+
+      JSON KEYS TO USE:
+      {
+        "title": "Catchy, natural-sounding title in Marathi",
+        "title_en": "English translation of the title",
+        "excerpt": "A short 2-sentence summary in Marathi",
+        "keywords": "comma, separated, seo, tags",
+        "thumbnail_prompt": "A brief English visual description for the background of a YouTube thumbnail.",
+        "content": "The full blog HTML starting with the beautiful highlight box described above."
+      }`;
+
+      let resultObj = null;
 
       try {
-        if (typeof db === 'undefined') throw new Error("Supabase 'db' is not defined.");
-        const { data, error } = await db.rpc('get_secret_key', { secret_name: 'GEMINI_API_KEY' });
-        if (error) throw new Error(error.message);
-        if (!data) throw new Error("Key not found in database.");
-        apiKey = data;
-        outputBox.innerHTML += `<span class='success'>✓ Key found: ${apiKey.substring(0, 8)}...</span>\n\n`;
-      } catch (err) {
-        outputBox.innerHTML += `<span class='error'>❌ DB ERROR: ${err.message}</span>`;
-        btn.innerText = "Scan Google Account Models";
-        btn.disabled = false;
+        const geminiKey = await getSecret('GEMINI_API_KEY');
+        if (!geminiKey) throw new Error("Google Gemini API Key is missing in the database.");
+        
+        // This will cascade through the models seamlessly
+        resultObj = await runGeminiRequest(geminiKey, systemInstruction, "Topic: " + prompt);
+        updateTimeline(null, 'success');
+        
+      } catch(err) {
+        console.error(err);
+        updateTimeline(err.message, 'error');
+        aiBtn.disabled = false;
+        setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 4000);
         return;
       }
 
-      outputBox.innerHTML += "<span class='info'>Step 2: Asking Google for allowed models...</span>\n";
-      
+      updateTimeline("Formatting & rendering your post...");
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(`Google API Error ${response.status}: ${errText}`);
-        }
-
-        const data = await response.json();
+        const jsonMatch = resultObj.text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("Could not find JSON in the AI response.");
         
-        if (!data.models || data.models.length === 0) {
-            outputBox.innerHTML += `<span class='error'>❌ Google returned an empty list. The Generative Language API is NOT enabled for this key.</span>`;
-            return;
-        }
+        const cleanJsonString = jsonMatch[0];
+        const aiData = JSON.parse(cleanJsonString);
 
-        // Filter only models that support text generation (generateContent)
-        const textModels = data.models.filter(m => m.supportedGenerationMethods.includes("generateContent"));
+        document.getElementById('p-title').value = aiData.title || '';
+        document.getElementById('p-title-en').value = aiData.title_en || '';
+        document.getElementById('p-excerpt').value = aiData.excerpt || '';
+        document.getElementById('p-seo-keywords').value = aiData.keywords || '';
+        document.getElementById('p-content').value = aiData.content || '';
         
-        const modelListText = textModels.map(m => ` - ${m.name.replace('models/', '')}`).join('\n');
-        
-        outputBox.innerHTML += `\n<span class='success'>✓ SUCCESS! YOUR ALLOWED TEXT MODELS ARE:</span>\n${modelListText}\n\n<span class='info'>-> Copy the name of the 'flash' or 'pro' model from this list and reply with it!</span>`;
+        const generatedSlug = (aiData.title_en || aiData.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        document.getElementById('p-slug').value = generatedSlug;
+        document.getElementById('p-status').value = 'draft';
+        document.getElementById('ai-thumb-prompt').value = aiData.thumbnail_prompt || aiData.title_en || '';
 
-      } catch (error) {
-        outputBox.innerHTML += `<span class='error'>❌ SCAN FAILED:\n${error.message}</span>`;
+        updateTimeline(null, 'success');
+        setTimeout(() => { 
+          document.getElementById('ai-processing-overlay').style.display = 'none'; 
+          showToast(`Success! Generated using ${resultObj.usedModel}.`);
+          aiBtn.disabled = false;
+        }, 1200);
+
+      } catch (parseErr) {
+        console.error("JSON Parsing Error:", parseErr);
+        updateTimeline("AI Output format error. Check browser console.", 'error');
+        aiBtn.disabled = false;
+        setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3000);
+      }
+    }
+
+    async function refineWithAI() {
+      const refinePrompt = document.getElementById('ai-refine-prompt').value;
+      const currentContent = document.getElementById('p-content').value;
+      const refineBtn = document.getElementById('btn-ai-refine');
+
+      if (!refinePrompt || !currentContent) return showToast("Enter both content and refinement instructions.", "error");
+      
+      refineBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
+      refineBtn.disabled = true;
+
+      const systemInstruction = `You are an expert Marathi blog editor. Modify the HTML content based on instructions. Respond ONLY with the completely updated raw HTML. STRICTLY NO MARKDOWN ALLOWED (No ** or *). Use FontAwesome icons (<i class="fa-solid fa-..."></i>) and inline CSS for beautiful UI formatting. Maintain natural Marathi language.`;
+
+      try {
+        const geminiKey = await getSecret('GEMINI_API_KEY');
+        const userText = "Instructions: " + refinePrompt + "\n\nHTML:\n" + currentContent;
+        
+        // Also uses the fallback hunter for refinement
+        let resultObj = await runGeminiRequest(geminiKey, systemInstruction, userText);
+        
+        let newHtml = resultObj.text;
+        newHtml = newHtml.replace(/^```html/i, '').replace(/```$/i, '').trim();
+        document.getElementById('p-content').value = newHtml;
+        document.getElementById('ai-refine-prompt').value = '';
+        showToast(`Content refined successfully with ${resultObj.usedModel}!`);
+      } catch (err) {
+        console.error(err); 
+        showToast("Refinement failed. Try again.", "error");
       } finally {
-        btn.innerText = "Scan Google Account Models";
+        refineBtn.innerHTML = '✨ Apply Fix';
+        refineBtn.disabled = false;
+      }
+    }
+
+    // ==========================================
+    // ADVANCED CANVAS THUMBNAIL ENGINE (USING FLUX MODEL)
+    // ==========================================
+
+    async function generateAIThumbnail() {
+      const prompt = document.getElementById('ai-thumb-prompt').value;
+      const marathiTitle = document.getElementById('p-title').value;
+
+      if(!prompt) return showToast("Please enter an image description first.", "error");
+      if(!marathiTitle) return showToast("Please generate the post first to get a Title.", "error");
+      
+      const btn = document.getElementById('btn-gen-thumb');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Designing Layout...';
+      btn.disabled = true;
+
+      try {
+        const imagePrompt = encodeURIComponent(`Professional cinematic photography, highly detailed, Maharashtrian cultural context, ${prompt}. The subject is clearly visible on the left side of the frame. The right side is a clean, dark, empty background. NO TEXT, NO LETTERS, completely empty on the right.`);
+        const seed = Math.floor(Math.random() * 100000);
+        const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1280&height=720&model=flux&nologo=true&seed=${seed}`;
+        
+        const imgRes = await fetch(imageUrl);
+        if (!imgRes.ok) throw new Error("Failed to fetch background image.");
+        const bgBlob = await imgRes.blob();
+        
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; 
+        img.src = URL.createObjectURL(bgBlob);
+        
+        await new Promise((resolve, reject) => {
+           img.onload = resolve;
+           img.onerror = reject;
+        });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 1280;
+        canvas.height = 720;
+        const ctx = canvas.getContext('2d');
+
+        ctx.drawImage(img, 0, 0, 1280, 720);
+
+        const grd = ctx.createLinearGradient(1280, 0, 400, 0);
+        grd.addColorStop(0, "rgba(35, 10, 50, 0.95)"); 
+        grd.addColorStop(0.6, "rgba(35, 10, 50, 0.75)");
+        grd.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 1280, 720);
+
+        ctx.fillStyle = "#facc15"; 
+        ctx.fillRect(630, 100, 10, 400);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "900 75px 'Noto Sans Devanagari', sans-serif";
+        ctx.textBaseline = "top";
+        ctx.shadowColor = "rgba(0,0,0,0.8)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+
+        const words = marathiTitle.split(' ');
+        let line = '';
+        let y = 100;
+        const maxWidth = 550; 
+
+        for(let i=0; i<words.length; i++) {
+            let testLine = line + words[i] + ' ';
+            let metrics = ctx.measureText(testLine);
+            if(metrics.width > maxWidth && i > 0) {
+                ctx.fillText(line.trim(), 660, y);
+                line = words[i] + ' ';
+                y += 100; 
+            } else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line.trim(), 660, y);
+
+        y += 140;
+        
+        ctx.fillStyle = "#facc15";
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.beginPath();
+        ctx.roundRect(660, y, 320, 50, 8);
+        ctx.fill();
+
+        ctx.fillStyle = "#1e293b";
+        ctx.font = "bold 26px sans-serif";
+        ctx.fillText("✓ Vitthal Speaks", 680, y + 10);
+
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "bold 28px 'Noto Sans Devanagari', sans-serif";
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = "rgba(0,0,0,0.8)";
+        ctx.fillText("नवीन अपडेट्स आणि संपूर्ण माहिती", 660, y + 80);
+
+        stagedThumbnailBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+        
+        const localUrl = URL.createObjectURL(stagedThumbnailBlob);
+        document.getElementById('staged-thumb-preview').src = localUrl;
+        document.getElementById('staged-thumb-container').style.display = 'block';
+
+        showToast("Thumbnail Designed Successfully!");
+      } catch (e) {
+        console.error(e); 
+        showToast("Failed to generate smart thumbnail.", "error");
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Design';
         btn.disabled = false;
       }
     }
-  </script>
 
+    async function uploadStagedThumbnail() {
+      if(!stagedThumbnailBlob) return;
+      const btn = document.getElementById('btn-use-thumb');
+      
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
+      btn.disabled = true;
+
+      const formData = new FormData();
+      formData.append('image', stagedThumbnailBlob, 'ai-thumbnail.jpg');
+
+      try {
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        if (data && data.success) {
+          document.getElementById('p-media-url').value = data.data.url;
+          document.getElementById('p-img-preview').src = data.data.url;
+          document.getElementById('p-img-preview').style.display = 'block';
+          
+          document.getElementById('staged-thumb-container').style.display = 'none';
+          stagedThumbnailBlob = null;
+          
+          showToast("Thumbnail Uploaded and Attached Successfully!");
+        } else { throw new Error('Upload failed'); }
+      } catch (e) {
+        showToast("Image upload failed!", "error");
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Upload & Attach';
+        btn.disabled = false;
+      }
+    }
+
+    async function handleImageUpload(e, hiddenInputId, previewImgId, statusMsgId) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const formData = new FormData(); formData.append('image', file);
+      try {
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data && data.success) {
+          document.getElementById(hiddenInputId).value = data.data.url;
+          document.getElementById(previewImgId).src = data.data.url;
+          document.getElementById(previewImgId).style.display = 'block';
+          showToast("Manual Upload Successful!");
+        } else { throw new Error('Upload failed'); }
+      } catch (err) { 
+        showToast("Manual Upload failed!", "error"); 
+      }
+      e.target.value = '';
+    }
+
+    function editPost(id) {
+      const post = allPosts.find(p => p.id === id);
+      if(!post) return;
+      document.getElementById('edit-id').value = post.id;
+      document.getElementById('p-title').value = post.title || '';
+      document.getElementById('p-title-en').value = post.title_en || '';
+      document.getElementById('p-category').value = post.category || '';
+      document.getElementById('p-slug').value = post.slug || '';
+      document.getElementById('p-seo-keywords').value = post.seo_keywords || '';
+      document.getElementById('p-media-url').value = post.featured_image || '';
+      if(post.featured_image) {
+        document.getElementById('p-img-preview').src = post.featured_image;
+        document.getElementById('p-img-preview').style.display = 'block';
+      } else {
+        document.getElementById('p-img-preview').style.display = 'none';
+      }
+      document.getElementById('p-excerpt').value = post.excerpt || '';
+      document.getElementById('p-content').value = post.content || '';
+      document.getElementById('p-status').value = post.status || 'published';
+      document.getElementById('form-title').innerText = "Edit Article";
+      switchTab('editor-tab', document.querySelectorAll('.post-tab')[1]);
+      window.scrollTo(0, 0);
+    }
+
+    async function savePost() {
+      const id = document.getElementById('edit-id').value;
+      const title = document.getElementById('p-title').value;
+      const content = document.getElementById('p-content').value;
+      const excerpt = document.getElementById('p-excerpt').value;
+      const status = document.getElementById('p-status').value;
+
+      if(!title || !content || !excerpt) return showToast("Title, Excerpt, and Content are strictly required.", "error");
+
+      let rawSlug = document.getElementById('p-slug').value || document.getElementById('p-title-en').value || title;
+      let slug = rawSlug.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '').toLowerCase() || 'post-'+Date.now();
+
+      const payload = { 
+        title, title_en: document.getElementById('p-title-en').value,
+        category: document.getElementById('p-category').value, slug, excerpt, content, status, 
+        seo_keywords: document.getElementById('p-seo-keywords').value,
+        featured_image: document.getElementById('p-media-url').value,
+        updated_at: new Date().toISOString() 
+      };
+
+      let error;
+      if(id) { 
+        if(status === 'published') {
+           const existing = allPosts.find(p => p.id == id);
+           if(!existing.published_at) payload.published_at = new Date().toISOString();
+        }
+        ({ error } = await db.from('blogs').update(payload).eq('id', id)); 
+      } 
+      else {
+        payload.created_at = new Date().toISOString();
+        if(status === 'published') payload.published_at = payload.created_at;
+        payload.views = 0;
+        ({ error } = await db.from('blogs').insert([payload]));
+      }
+
+      if(error) { showToast(error.message, "error"); }
+      else { 
+        showToast("Successfully saved! GitHub will rebuild."); 
+        setTimeout(()=> { window.location.reload(); }, 2000);
+      }
+    }
+
+    async function uploadHtmlFile() {
+      const title = document.getElementById('u-title').value;
+      const fileInput = document.getElementById('u-file');
+      const excerpt = document.getElementById('u-excerpt').value;
+      const status = document.getElementById('u-status').value;
+      
+      if(!title || !excerpt || !fileInput.files[0]) return showToast("Title, Excerpt, and HTML file are strictly required.", "error");
+
+      const reader = new FileReader();
+      
+      reader.onload = async function(e) {
+        let content = e.target.result;
+        
+        const tag1 = "<bo" + "dy[^>]*>";
+        const tag2 = "<\\/bo" + "dy>";
+        const bodyRegex = new RegExp(tag1 + "([\\s\\S]*?)" + tag2, "i");
+        
+        const bodyMatch = content.match(bodyRegex);
+        if (bodyMatch) content = bodyMatch[1];
+
+        let rawSlug = document.getElementById('u-slug').value || document.getElementById('u-title-en').value || title;
+        let slug = rawSlug.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '').toLowerCase() || 'post-'+Date.now();
+        
+        const payload = { 
+          title, title_en: document.getElementById('u-title-en').value, category: document.getElementById('u-category').value,
+          slug, excerpt, content, status, views: 0, seo_keywords: document.getElementById('u-seo-keywords').value,
+          featured_image: document.getElementById('u-media-url').value, created_at: new Date().toISOString() 
+        };
+        if(status === 'published') payload.published_at = new Date().toISOString();
+
+        const { error } = await db.from('blogs').insert([payload]);
+        if(error) { showToast(error.message, "error"); }
+        else {
+          showToast("Uploaded successfully! GitHub will rebuild.");
+          setTimeout(()=>{ window.location.reload(); }, 2000);
+        }
+      };
+      reader.readAsText(fileInput.files[0]);
+    }
+
+    function resetBlogForm() {
+      document.getElementById('edit-id').value = '';
+      document.getElementById('p-title').value = '';
+      document.getElementById('p-title-en').value = '';
+      document.getElementById('p-category').value = '';
+      document.getElementById('p-slug').value = '';
+      document.getElementById('p-seo-keywords').value = '';
+      document.getElementById('p-media-url').value = '';
+      document.getElementById('p-img-preview').style.display = 'none';
+      document.getElementById('staged-thumb-container').style.display = 'none';
+      stagedThumbnailBlob = null;
+      document.getElementById('p-excerpt').value = '';
+      document.getElementById('p-content').value = '';
+      document.getElementById('p-status').value = 'draft';
+      document.getElementById('form-title').innerText = "Create New Article";
+    }
+
+    async function deletePost(id) {
+      if(confirm("Are you sure you want to permanently delete this post?")) { await db.from('blogs').delete().eq('id', id); loadBlogs(); }
+    }
+
+    loadBlogs();
+  </script>
 </body>
 </html>
