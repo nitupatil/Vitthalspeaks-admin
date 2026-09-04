@@ -48,18 +48,18 @@
     .seo-section h3 { font-size: 1rem; margin-top: 0; margin-bottom: 15px; color: var(--primary); }
 
     /* AI Section Styling */
-    .ai-section { background: linear-gradient(135deg, #f3e8ff, #fae8ff); border: 1px solid #d8b4fe; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(216, 180, 254, 0.2); }
-    .ai-section h3 { margin-top: 0; color: #7e22ce; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
-    .ai-input { background: white !important; border-color: #d8b4fe !important; }
-    .btn-ai { background: #9333ea; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
-    .btn-ai:hover { background: #7e22ce; }
-    .btn-ai:disabled { background: #c084fc; cursor: not-allowed; }
+    .ai-section { background: linear-gradient(135deg, #e0f2fe, #dbeafe); border: 1px solid #93c5fd; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15); }
+    .ai-section h3 { margin-top: 0; color: #1e3a8a; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+    .ai-input { background: white !important; border-color: #93c5fd !important; }
+    .btn-ai { background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .btn-ai:hover { background: #1d4ed8; }
+    .btn-ai:disabled { background: #93c5fd; cursor: not-allowed; }
 
     /* Thumbnail Studio Styling */
     .thumb-studio { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; border-top: 1px dashed var(--border); padding-top: 20px; }
     .thumb-card { border-radius: 12px; padding: 15px; border: 1px solid; }
     .thumb-manual { background: #fff8e1; border-color: #fde68a; }
-    .thumb-ai { background: #f3e8ff; border-color: #d8b4fe; }
+    .thumb-ai { background: #e0f2fe; border-color: #93c5fd; }
 
     .btn { padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; }
     .btn-primary { background: var(--primary); color: white; width: 100%; }
@@ -131,7 +131,7 @@
   <!-- AI PROCESSING OVERLAY TIMELINE -->
   <div id="ai-processing-overlay">
     <div class="timeline-card">
-      <h2><i class="fa-solid fa-microchip fa-bounce" style="color: #9333ea;"></i> AI Architect Working</h2>
+      <h2><i class="fa-solid fa-microchip fa-bounce" style="color: #2563eb;"></i> Gemini AI Working</h2>
       <ul id="ai-timeline">
         <!-- Dynamic timeline steps injected here -->
       </ul>
@@ -177,20 +177,20 @@
         <input type="hidden" id="edit-id">
         <input type="hidden" id="p-media-url">
 
-        <!-- GEMINI & GROQ AI POST SECTION -->
+        <!-- GEMINI AI POST SECTION -->
         <div class="ai-section">
-          <h3>🪄 Generate Text Content with Dual AI Engine</h3>
-          <p style="font-size: 0.85rem; color: #6b21a8; margin-top: 0; margin-bottom: 12px;">Enter a topic. The system will try Google Gemini first, and automatically fall back to Groq if busy.</p>
+          <h3>🪄 Generate Content with Google Gemini</h3>
+          <p style="font-size: 0.85rem; color: #1e3a8a; margin-top: 0; margin-bottom: 12px;">Powered by gemini-3.6-flash. Automatically retries if Google servers are busy.</p>
           <div class="input-group" style="margin-bottom: 12px;">
-            <input type="text" id="ai-prompt" class="ai-input" placeholder="e.g. Write a Marathi post about the MPSC exam updates 2026...">
+            <input type="text" id="ai-prompt" class="ai-input" placeholder="e.g. Write a detailed Marathi post about PM Kisan Yojana...">
           </div>
           <button id="btn-ai" class="btn-ai" onclick="generateWithAI()">✨ Generate Blog Content</button>
 
           <!-- REFINEMENT BOX -->
-          <div id="ai-refine-box" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #d8b4fe;">
-            <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #7e22ce; margin-bottom: 6px;">Modify / Refine Existing Text:</label>
+          <div id="ai-refine-box" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #93c5fd;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e3a8a; margin-bottom: 6px;">Modify / Refine Existing Text:</label>
             <div style="display: flex; gap: 10px;">
-              <input type="text" id="ai-refine-prompt" class="ai-input" style="flex: 1;" placeholder="e.g. Make it longer, add a table, etc.">
+              <input type="text" id="ai-refine-prompt" class="ai-input" style="flex: 1;" placeholder="e.g. Expand on the eligibility criteria...">
               <button id="btn-ai-refine" class="btn-ai" style="width: auto; padding: 10px 15px;" onclick="refineWithAI()">✨ Apply Fix</button>
             </div>
           </div>
@@ -216,13 +216,13 @@
 
           <!-- AI Generator -->
           <div class="thumb-card thumb-ai">
-            <label style="color: #7e22ce; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Smart YouTube Thumbnail</label>
-            <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8b4fe; font-size:0.85rem; margin-bottom:10px;" placeholder="Describe the subject (e.g. Maharashtrian family)...">
+            <label style="color: #2563eb; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Smart YouTube Thumbnail</label>
+            <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #93c5fd; font-size:0.85rem; margin-bottom:10px;" placeholder="Describe the subject (e.g. Maharashtrian family)...">
             <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Design</button>
             
             <!-- Local Staging Area -->
-            <div id="staged-thumb-container" style="display: none; margin-top: 15px; border-top: 1px dashed #d8b4fe; padding-top: 15px;">
-              <p style="font-size: 0.75rem; color: #7e22ce; margin:0 0 5px 0; font-weight:600;">Local Preview (Not Uploaded Yet):</p>
+            <div id="staged-thumb-container" style="display: none; margin-top: 15px; border-top: 1px dashed #93c5fd; padding-top: 15px;">
+              <p style="font-size: 0.75rem; color: #2563eb; margin:0 0 5px 0; font-weight:600;">Local Preview (Not Uploaded Yet):</p>
               <img id="staged-thumb-preview" src="" style="width: 100%; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
               
               <div style="display: flex; gap: 5px;">
@@ -424,10 +424,9 @@
     }
 
     // ==========================================
-    // MULTI-AI ENGINE WITH TIMELINE OVERLAY
+    // GEMINI AI ENGINE WITH SMART RETRY LOOP
     // ==========================================
     
-    // UI Function for Timeline Progress
     function updateTimeline(msg, status = "loading") {
       const ul = document.getElementById('ai-timeline');
       const activeItem = ul.querySelector('.active-step');
@@ -445,7 +444,7 @@
         const li = document.createElement('li');
         li.className = 'active-step';
         li.dataset.msg = msg;
-        li.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="color: #9333ea; width: 20px;"></i> <span style="color: #1e293b; font-weight: 600;">${msg}</span>`;
+        li.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="color: #2563eb; width: 20px;"></i> <span style="color: #1e293b; font-weight: 600;">${msg}</span>`;
         ul.appendChild(li);
       }
     }
@@ -456,38 +455,34 @@
       return data;
     }
 
-    async function fetchGemini(modelName, apiKey, systemInstruction, prompt) {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: systemInstruction + "\n\nTopic: " + prompt }] }],
-          generationConfig: { responseMimeType: "application/json" }
-        })
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      return data.candidates[0].content.parts[0].text;
-    }
-
-    async function fetchGroq(apiKey, systemInstruction, prompt) {
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: "qwen/qwen3.8-27b", // Using the verified strong LLM from your account!
-          messages: [
-            { role: "system", content: systemInstruction },
-            { role: "user", content: prompt }
-          ]
-        })
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      return data.choices[0].message.content;
+    // Smart Function: Automatically retries if Google is busy (Error 503)
+    async function fetchGeminiWithRetry(apiKey, systemInstruction, prompt, retries = 3) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+      
+      for (let i = 0; i < retries; i++) {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemInstruction + "\n\nTopic: " + prompt }] }]
+          })
+        });
+        
+        // If Google is busy, wait 2.5 seconds and loop again
+        if (res.status === 503 && i < retries - 1) {
+          updateTimeline(`Google server busy (503). Retrying silently in 2 seconds... (Attempt ${i + 1}/${retries})`);
+          await new Promise(resolve => setTimeout(resolve, 2500));
+          continue; 
+        }
+        
+        if (!res.ok) {
+           const errText = await res.text();
+           throw new Error(`Google API Error ${res.status}: ${errText}`);
+        }
+        
+        const data = await res.json();
+        return data.candidates[0].content.parts[0].text;
+      }
     }
 
     async function generateWithAI() {
@@ -496,17 +491,17 @@
       
       if (!prompt) return showToast("Please enter a topic for the AI to generate.", "error");
 
-      // Show Overlay Timeline
       document.getElementById('ai-processing-overlay').style.display = 'flex';
       document.getElementById('ai-timeline').innerHTML = '';
       aiBtn.disabled = true;
 
-      const systemInstruction = `You are an expert Marathi blog writer and professional web designer. Write a high-quality, SEO-optimized blog post in Marathi.
+      const systemInstruction = `You are an API. YOU MUST RESPOND ONLY WITH A RAW JSON OBJECT. DO NOT output conversational text, greetings, or markdown blocks. Start exactly with { and end with }.
+      You are an expert Marathi blog writer. Write a high-quality, native-sounding, SEO-optimized blog post in Marathi.
+      
       IMPORTANT INSTRUCTIONS:
-      1. Respond ONLY with a valid JSON object string.
-      2. Format the "content" body in modern HTML. 
-      3. **PREFIX DESIGN:** ALWAYS begin the "content" HTML with a beautiful, fully-styled highlight box summarizing the post. Use this exact structure: <div style='background-color:#fffbeb; padding:20px; border-left:6px solid #f59e0b; border-radius:8px; margin-bottom:25px; box-shadow:0 4px 6px rgba(0,0,0,0.05); font-size:1.05rem; color:#334155;'><strong style='color:#b45309; font-size:1.15rem; display:block; margin-bottom:8px;'>महत्त्वाची माहिती:</strong>[Your summary here]</div>
-      4. Use attractive inline CSS for headings (<h2>), lists (<ul>), and paragraphs to make it look premium.
+      1. Format the "content" body in modern HTML. 
+      2. **PREFIX DESIGN:** ALWAYS begin the "content" HTML with a beautiful highlight box summarizing the post. Use this exact structure: <div style='background-color:#fffbeb; padding:20px; border-left:6px solid #f59e0b; border-radius:8px; margin-bottom:25px; box-shadow:0 4px 6px rgba(0,0,0,0.05); font-size:1.05rem; color:#334155;'><strong style='color:#b45309; font-size:1.15rem; display:block; margin-bottom:8px;'>महत्त्वाची माहिती:</strong>[Your summary here]</div>
+      3. Use inline CSS for headings (<h2>), lists (<ul>), and paragraphs.
       
       JSON KEYS TO USE:
       {
@@ -519,37 +514,19 @@
       }`;
 
       let resultText = null;
-      let usedProvider = "";
 
-      // Step 1: Gemini
-      updateTimeline("Connecting to Google Gemini...");
+      updateTimeline("Connecting to Google Gemini (3.6-flash)...");
       try {
         const geminiKey = await getSecret('GEMINI_API_KEY');
-        if (!geminiKey) throw new Error("Key missing");
-        resultText = await fetchGemini('gemini-1.5-flash', geminiKey, systemInstruction, prompt);
+        if (!geminiKey) throw new Error("Google Gemini API Key is missing in the database.");
+        
+        // This will automatically handle 503 errors without crashing
+        resultText = await fetchGeminiWithRetry(geminiKey, systemInstruction, prompt);
         updateTimeline(null, 'success');
-        usedProvider = "Gemini";
+        
       } catch(err) {
-        updateTimeline(null, 'error');
-      }
-
-      // Step 2: Groq Qwen (Fallback based on Diagnostics)
-      if (!resultText) {
-        updateTimeline("Falling back to Groq (Qwen 27B)...");
-        try {
-          const groqKey = await getSecret('GROQ_API_KEY');
-          if (!groqKey) throw new Error("Key missing");
-          resultText = await fetchGroq(groqKey, systemInstruction, prompt);
-          updateTimeline(null, 'success');
-          usedProvider = "Groq Qwen";
-        } catch(err) {
-          updateTimeline(null, 'error');
-        }
-      }
-
-      // Step 3: Final Processing
-      if (!resultText) {
-        updateTimeline("All AI engines are busy. Check your API Keys.", 'error');
+        console.error(err);
+        updateTimeline("Failed to generate content.", 'error');
         aiBtn.disabled = false;
         setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3500);
         return;
@@ -557,27 +534,35 @@
 
       updateTimeline("Formatting & rendering your post...");
       try {
-        resultText = resultText.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const aiData = JSON.parse(resultText);
+        // Smart JSON Extractor (ignores conversational text)
+        const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("Could not find JSON in the AI response.");
+        
+        const cleanJsonString = jsonMatch[0];
+        const aiData = JSON.parse(cleanJsonString);
 
-        document.getElementById('p-title').value = aiData.title;
-        document.getElementById('p-title-en').value = aiData.title_en;
-        document.getElementById('p-excerpt').value = aiData.excerpt;
-        document.getElementById('p-seo-keywords').value = aiData.keywords;
-        document.getElementById('p-content').value = aiData.content;
-        document.getElementById('p-slug').value = aiData.title_en.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        // Safely populate fields
+        document.getElementById('p-title').value = aiData.title || '';
+        document.getElementById('p-title-en').value = aiData.title_en || '';
+        document.getElementById('p-excerpt').value = aiData.excerpt || '';
+        document.getElementById('p-seo-keywords').value = aiData.keywords || '';
+        document.getElementById('p-content').value = aiData.content || '';
+        
+        const generatedSlug = (aiData.title_en || aiData.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        document.getElementById('p-slug').value = generatedSlug;
         document.getElementById('p-status').value = 'draft';
-        document.getElementById('ai-thumb-prompt').value = aiData.thumbnail_prompt || aiData.title_en;
+        document.getElementById('ai-thumb-prompt').value = aiData.thumbnail_prompt || aiData.title_en || '';
 
         updateTimeline(null, 'success');
         setTimeout(() => { 
           document.getElementById('ai-processing-overlay').style.display = 'none'; 
-          showToast(`Success! Generated using ${usedProvider}.`);
+          showToast(`Success! Generated using Gemini 3.6 Flash.`);
           aiBtn.disabled = false;
         }, 1200);
 
       } catch (parseErr) {
-        updateTimeline("AI Output format error. Please try again.", 'error');
+        console.error("JSON Parsing Error:", parseErr);
+        updateTimeline("AI Output format error. Check browser console.", 'error');
         aiBtn.disabled = false;
         setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3000);
       }
@@ -593,30 +578,28 @@
       refineBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
       refineBtn.disabled = true;
 
-      const systemInstruction = `You are an expert Marathi blog editor. Modify the HTML content based on instructions. Respond ONLY with the completely updated raw HTML. Do not use markdown blocks. Maintain all inline CSS styling.`;
+      const systemInstruction = `You are an expert Marathi blog editor. Modify the HTML content based on instructions. Respond ONLY with the completely updated raw HTML. Do not use markdown blocks or conversational text. Maintain all inline CSS styling.`;
 
       try {
-        const groqKey = await getSecret('GROQ_API_KEY');
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const geminiKey = await getSecret('GEMINI_API_KEY');
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiKey}`;
+        
+        const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: "qwen/qwen3.8-27b",
-            messages: [
-              { role: "system", content: systemInstruction },
-              { role: "user", content: `Instructions: ${refinePrompt}\n\nHTML:\n${currentContent}` }
-            ]
+            contents: [{ parts: [{ text: systemInstruction + "\n\nInstructions: " + refinePrompt + "\n\nHTML:\n" + currentContent }] }]
           })
         });
 
         if(!res.ok) throw new Error("API Failed");
         const data = await res.json();
-        let newHtml = data.choices[0].message.content;
+        let newHtml = data.candidates[0].content.parts[0].text;
         
         newHtml = newHtml.replace(/^```html/i, '').replace(/```$/i, '').trim();
         document.getElementById('p-content').value = newHtml;
         document.getElementById('ai-refine-prompt').value = '';
-        showToast("Content refined successfully via Groq!");
+        showToast("Content refined successfully!");
       } catch (err) {
         console.error(err); 
         showToast("Refinement failed. Check API Keys.", "error");
