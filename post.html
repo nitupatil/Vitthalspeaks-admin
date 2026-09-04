@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -458,21 +458,15 @@
       return typeof data === 'string' ? data.trim() : data;
     }
 
-    // Ultra-compatible API request (Enforces JSON output natively)
-    async function runGeminiRequest(apiKey, promptText, expectJson = false) {
+    // Ultra-compatible API request
+    async function runGeminiRequest(apiKey, promptText) {
       const cleanKey = apiKey ? apiKey.trim() : '';
       if (!cleanKey) throw new Error("Google API Key is missing.");
 
-      // Base payload
       const bodyPayload = {
         contents: [{ role: "user", parts: [{ text: promptText }] }],
         generationConfig: { temperature: 0.7 }
       };
-
-      // THIS is the magic command that forces the AI to output pure JSON data
-      if (expectJson) {
-        bodyPayload.generationConfig.responseMimeType = "application/json";
-      }
 
       const modelsToTry = [
         'gemini-1.5-flash',
@@ -544,8 +538,9 @@
       document.getElementById('ai-timeline').innerHTML = '';
       aiBtn.disabled = true;
 
-      // Deep embedded JSON enforcement for all models
-      const strictPrompt = `You are a data API. You MUST output ONLY valid JSON.
+      const strictPrompt = `You are a strict data API. You MUST output ONLY a valid JSON object. 
+DO NOT output your thought process. DO NOT write conversational text. DO NOT write markdown outside the JSON.
+
 Create a Marathi blog post about: "${topic}"
 
 Return exactly this JSON structure. Ensure all HTML inside the "content" string uses single quotes for attributes (e.g. style='color:red;') to prevent breaking the JSON:
@@ -568,8 +563,7 @@ RULES FOR "content":
         const geminiKey = await getSecret('GEMINI_API_KEY');
         if (!geminiKey) throw new Error("API Key is missing from database.");
         
-        // Pass "true" to forcefully trigger the application/json mimeType lock
-        resultObj = await runGeminiRequest(geminiKey, strictPrompt, true);
+        resultObj = await runGeminiRequest(geminiKey, strictPrompt);
         updateTimeline(null, 'success');
       } catch (err) {
         console.error(err);
@@ -582,13 +576,24 @@ RULES FOR "content":
       updateTimeline("Formatting & rendering your post...");
       try {
         let raw = resultObj.text.trim();
+        let cleanJsonStr = "";
         
-        // Strip markdown backticks in case an older model ignored the JSON parameter
-        if (raw.startsWith("```")) {
-           raw = raw.replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '').trim();
+        // Bulletproof Regex Extractor: Grabs JSON even if AI wrote a 500-word essay around it
+        const markdownMatch = raw.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
+        if (markdownMatch) {
+          cleanJsonStr = markdownMatch[1];
+        } else {
+          const startIdx = raw.indexOf('{');
+          const endIdx = raw.lastIndexOf('}');
+          if (startIdx !== -1 && endIdx !== -1) {
+            cleanJsonStr = raw.substring(startIdx, endIdx + 1);
+          } else {
+            console.error("Raw response:", raw);
+            throw new Error("No JSON object found in response.");
+          }
         }
-
-        const aiData = JSON.parse(raw);
+        
+        const aiData = JSON.parse(cleanJsonStr);
 
         document.getElementById('p-title').value = aiData.title || '';
         document.getElementById('p-title-en').value = aiData.title_en || '';
@@ -636,10 +641,16 @@ ${currentContent}`;
       try {
         const geminiKey = await getSecret('GEMINI_API_KEY');
         
-        // Pass false because we want raw HTML, not JSON
-        let resultObj = await runGeminiRequest(geminiKey, strictPrompt, false);
-        let newHtml = resultObj.text.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/i, '').trim();
+        let resultObj = await runGeminiRequest(geminiKey, strictPrompt);
+        let raw = resultObj.text.trim();
         
+        // Smart HTML Extractor
+        let newHtml = raw;
+        const htmlMatch = raw.match(/```(?:html)?\s*([\s\S]*?)\s*```/i);
+        if (htmlMatch) {
+          newHtml = htmlMatch[1];
+        }
+
         document.getElementById('p-content').value = newHtml;
         document.getElementById('ai-refine-prompt').value = '';
         showToast(`Refined successfully with ${resultObj.usedModel}!`);
@@ -669,7 +680,7 @@ ${currentContent}`;
 
         const imagePrompt = encodeURIComponent(`Professional cinematic photography, highly detailed, Maharashtrian cultural context, ${prompt}. The subject is clearly visible on the left side of the frame. The right side is a clean, dark, empty background. NO TEXT, NO LETTERS.`);
         const seed = Math.floor(Math.random() * 100000);
-        const imageUrl = `[https://image.pollinations.ai/prompt/$](https://image.pollinations.ai/prompt/$){imagePrompt}?width=1280&height=720&model=flux&nologo=true&seed=${seed}`;
+        const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1280&height=720&model=flux&nologo=true&seed=${seed}`;
         
         const imgRes = await fetch(imageUrl);
         if (!imgRes.ok) throw new Error("Failed to fetch background image.");
@@ -782,7 +793,7 @@ ${currentContent}`;
       formData.append('image', stagedThumbnailBlob, 'ai-thumbnail.jpg');
 
       try {
-        const res = await fetch(`[https://api.imgbb.com/1/upload?key=$](https://api.imgbb.com/1/upload?key=$){IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
         const data = await res.json();
         
         if (data && data.success) {
@@ -811,7 +822,7 @@ ${currentContent}`;
       formData.append('image', file);
       
       try {
-        const res = await fetch(`[https://api.imgbb.com/1/upload?key=$](https://api.imgbb.com/1/upload?key=$){IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
         const data = await res.json();
         if (data && data.success) {
           document.getElementById(hiddenInputId).value = data.data.url;
