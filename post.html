@@ -77,8 +77,6 @@
     .badge.published { background: #dcfce7; color: #059669; border: 1px solid #a7f3d0; }
     .badge.draft { background: #fef9c3; color: #d97706; border: 1px solid #fde68a; }
     
-    .status-msg { text-align: center; font-weight: 600; margin-top: 10px; }
-
     /* Custom Toast Notification */
     .toast-container { position: fixed; top: 20px; right: -400px; background: white; border-left: 6px solid var(--success); box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 15px 25px; border-radius: 8px; display: flex; align-items: center; gap: 15px; z-index: 9999; transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     .toast-container.show { right: 20px; }
@@ -202,7 +200,7 @@
           <!-- AI Generator -->
           <div class="thumb-card thumb-ai">
             <label style="color: #7e22ce; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Smart YouTube Thumbnail</label>
-            <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8b4fe; font-size:0.85rem; margin-bottom:10px;" placeholder="Describe the background subject (e.g. Maharashtrian family)...">
+            <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8b4fe; font-size:0.85rem; margin-bottom:10px;" placeholder="Describe the subject (e.g. Maharashtrian family)...">
             <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Design</button>
             
             <!-- Local Staging Area -->
@@ -240,7 +238,6 @@
           <button class="btn btn-action" style="width: 100%; padding: 12px; border: 1px solid var(--primary);" onclick="previewEditor()"><i class="fa-solid fa-eye"></i> Full Screen Preview</button>
           <button class="btn btn-primary" style="width: 100%; padding: 12px;" onclick="savePost()"><i class="fa-solid fa-cloud-arrow-up"></i> Save Post to Database</button>
         </div>
-        <div id="p-msg" class="status-msg" style="color:var(--success);"></div>
       </div>
     </div>
 
@@ -275,7 +272,6 @@
         <div class="input-group"><label>Status</label><select id="u-status"><option value="published">🟢 Published (Live)</option><option value="draft">🟡 Draft (Hidden)</option></select></div>
         
         <button class="btn btn-primary" onclick="uploadHtmlFile()" style="width: 100%; padding: 12px;"><i class="fa-solid fa-upload"></i> Extract & Publish</button>
-        <div id="u-msg" class="status-msg" style="color:var(--success);"></div>
       </div>
     </div>
   </div>
@@ -548,7 +544,7 @@
     }
 
     // ==========================================
-    // ADVANCED CANVAS THUMBNAIL ENGINE
+    // ADVANCED CANVAS THUMBNAIL ENGINE (USING FLUX MODEL)
     // ==========================================
 
     async function generateAIThumbnail() {
@@ -564,10 +560,11 @@
 
       try {
         // 1. Fetch high-quality background via reliable Flux API
-        // Asking the AI to leave space on the right for text layout
-        const imagePrompt = encodeURIComponent(`Professional cinematic photography, highly detailed, Maharashtrian cultural context, ${prompt}. The subject is on the left side. The right side is a clean empty background. NO TEXT, NO LETTERS.`);
+        // Asking the AI to put the subject on the left and leave the right side clean
+        const imagePrompt = encodeURIComponent(`Professional cinematic photography, highly detailed, Maharashtrian cultural context, ${prompt}. The subject is clearly visible on the left side of the frame. The right side is a clean, dark, empty background. NO TEXT, NO LETTERS, completely empty on the right.`);
         const seed = Math.floor(Math.random() * 100000);
-        const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1280&height=720&nologo=true&seed=${seed}`;
+        // Using "model=flux" for high quality photorealistic rendering
+        const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1280&height=720&model=flux&nologo=true&seed=${seed}`;
         
         const imgRes = await fetch(imageUrl);
         if (!imgRes.ok) throw new Error("Failed to fetch background image.");
@@ -594,15 +591,15 @@
 
         // 4. Draw Dark Gradient Overlay on the RIGHT half for the text
         const grd = ctx.createLinearGradient(1280, 0, 400, 0);
-        grd.addColorStop(0, "rgba(25, 0, 50, 0.95)"); // Deep purple/dark tone like your sample
-        grd.addColorStop(0.6, "rgba(25, 0, 50, 0.7)");
+        grd.addColorStop(0, "rgba(35, 10, 50, 0.95)"); // Deep rich purple tone matching the reference
+        grd.addColorStop(0.6, "rgba(35, 10, 50, 0.75)");
         grd.addColorStop(1, "rgba(0,0,0,0)");
         ctx.fillStyle = grd;
         ctx.fillRect(0, 0, 1280, 720);
 
         // 5. Draw Yellow Accent Badge
         ctx.fillStyle = "#facc15"; 
-        ctx.fillRect(650, 100, 10, 400);
+        ctx.fillRect(630, 100, 10, 400);
 
         // 6. Draw perfect Marathi Title
         ctx.fillStyle = "#ffffff";
@@ -623,14 +620,14 @@
             let testLine = line + words[i] + ' ';
             let metrics = ctx.measureText(testLine);
             if(metrics.width > maxWidth && i > 0) {
-                ctx.fillText(line.trim(), 680, y);
+                ctx.fillText(line.trim(), 660, y);
                 line = words[i] + ' ';
                 y += 100; // Line height
             } else {
                 line = testLine;
             }
         }
-        ctx.fillText(line.trim(), 680, y);
+        ctx.fillText(line.trim(), 660, y);
 
         // 7. Draw "Vitthal Speaks" branding styling below the title
         y += 140;
@@ -641,20 +638,20 @@
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 0;
         ctx.beginPath();
-        ctx.roundRect(680, y, 320, 50, 8);
+        ctx.roundRect(660, y, 320, 50, 8);
         ctx.fill();
 
         // Text inside the pill
         ctx.fillStyle = "#1e293b";
         ctx.font = "bold 26px sans-serif";
-        ctx.fillText("✓ Vitthal Speaks", 700, y + 10);
+        ctx.fillText("✓ Vitthal Speaks", 680, y + 10);
 
         // Small subtitle text
         ctx.fillStyle = "#e2e8f0";
         ctx.font = "bold 28px 'Noto Sans Devanagari', sans-serif";
         ctx.shadowBlur = 5;
         ctx.shadowColor = "rgba(0,0,0,0.8)";
-        ctx.fillText("नवीन अपडेट्स आणि संपूर्ण माहिती", 680, y + 80);
+        ctx.fillText("नवीन अपडेट्स आणि संपूर्ण माहिती", 660, y + 80);
 
         // 8. Convert final merged canvas back to Blob
         stagedThumbnailBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
@@ -677,7 +674,6 @@
     async function uploadStagedThumbnail() {
       if(!stagedThumbnailBlob) return;
       const btn = document.getElementById('btn-use-thumb');
-      const msg = document.getElementById('p-msg');
       
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
       btn.disabled = true;
@@ -697,7 +693,7 @@
           document.getElementById('staged-thumb-container').style.display = 'none';
           stagedThumbnailBlob = null;
           
-          showToast("Thumbnail Attached Successfully!");
+          showToast("Thumbnail Uploaded and Attached Successfully!");
         } else { throw new Error('Upload failed'); }
       } catch (e) {
         showToast("Image upload failed!", "error");
