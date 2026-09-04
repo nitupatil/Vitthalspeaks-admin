@@ -122,19 +122,16 @@
 </head>
 <body>
 
-  <!-- TOAST NOTIFICATION -->
   <div id="app-toast" class="toast-container">
     <div class="toast-icon" id="toast-icon"><i class="fa-solid fa-check"></i></div>
     <div class="toast-message" id="toast-message">Action Successful!</div>
   </div>
 
-  <!-- AI PROCESSING OVERLAY TIMELINE -->
   <div id="ai-processing-overlay">
     <div class="timeline-card">
       <h2><i class="fa-solid fa-microchip fa-bounce" style="color: #2563eb;"></i> Gemini AI Working</h2>
       <ul id="ai-timeline">
-        <!-- Dynamic timeline steps injected here -->
-      </ul>
+        </ul>
     </div>
   </div>
 
@@ -155,7 +152,6 @@
       <button class="post-tab" onclick="switchTab('upload-tab', this)"><i class="fa-solid fa-file-code"></i> Upload HTML</button>
     </div>
 
-    <!-- 1. POST LIST TAB -->
     <div id="list-tab" class="tab-content active">
       <div class="card">
         <div class="card-header">
@@ -166,7 +162,6 @@
       </div>
     </div>
 
-    <!-- 2. EDITOR TAB -->
     <div id="editor-tab" class="tab-content">
       <div class="card">
         <div class="card-header">
@@ -177,16 +172,14 @@
         <input type="hidden" id="edit-id">
         <input type="hidden" id="p-media-url">
 
-        <!-- GEMINI AI POST SECTION -->
         <div class="ai-section">
           <h3>🪄 Generate Content with Google Gemini</h3>
-          <p style="font-size: 0.85rem; color: #1e3a8a; margin-top: 0; margin-bottom: 12px;">Powered by gemini-3.6-flash. Automatically retries if Google servers are busy.</p>
+          <p style="font-size: 0.85rem; color: #1e3a8a; margin-top: 0; margin-bottom: 12px;">Powered by Gemini Flash. Automatically retries if Google servers are busy.</p>
           <div class="input-group" style="margin-bottom: 12px;">
             <input type="text" id="ai-prompt" class="ai-input" placeholder="e.g. Write a detailed Marathi post about PM Kisan Yojana...">
           </div>
           <button id="btn-ai" class="btn-ai" onclick="generateWithAI()">✨ Generate Blog Content</button>
 
-          <!-- REFINEMENT BOX -->
           <div id="ai-refine-box" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #93c5fd;">
             <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e3a8a; margin-bottom: 6px;">Modify / Refine Existing Text:</label>
             <div style="display: flex; gap: 10px;">
@@ -196,16 +189,13 @@
           </div>
         </div>
 
-        <!-- STANDARD EDITOR FIELDS -->
         <div class="input-group"><label>Title (Marathi) <span class="required">*</span></label><input type="text" id="p-title" placeholder="Enter post title"></div>
         <div class="input-group"><label>HTML Content <span class="required">*</span></label><textarea id="p-content" rows="15" placeholder="Write your HTML content here..."></textarea></div>
         <div class="input-group"><label>Short Excerpt <span class="required">*</span></label><input type="text" id="p-excerpt" placeholder="Short preview text"></div>
         
-        <!-- THUMBNAIL STUDIO -->
         <label style="display: block; font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); margin-top: 25px;"><i class="fa-solid fa-image"></i> Thumbnail Studio</label>
         <div class="thumb-studio">
           
-          <!-- Manual Upload -->
           <div class="thumb-card thumb-manual">
             <label style="color: #d97706; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 1: Manual Upload</label>
             <div class="upload-box" onclick="document.getElementById('p-img-upload').click()" style="background: white; border-color: #fde68a; padding: 15px;">
@@ -214,13 +204,11 @@
             <input type="file" id="p-img-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'p-media-url', 'p-img-preview', 'p-msg')">
           </div>
 
-          <!-- AI Generator -->
           <div class="thumb-card thumb-ai">
             <label style="color: #2563eb; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Smart YouTube Thumbnail</label>
             <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #93c5fd; font-size:0.85rem; margin-bottom:10px;" placeholder="Describe the subject (e.g. Maharashtrian family)...">
             <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Design</button>
             
-            <!-- Local Staging Area -->
             <div id="staged-thumb-container" style="display: none; margin-top: 15px; border-top: 1px dashed #93c5fd; padding-top: 15px;">
               <p style="font-size: 0.75rem; color: #2563eb; margin:0 0 5px 0; font-weight:600;">Local Preview (Not Uploaded Yet):</p>
               <img id="staged-thumb-preview" src="" style="width: 100%; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -258,7 +246,6 @@
       </div>
     </div>
 
-    <!-- 3. HTML UPLOAD TAB -->
     <div id="upload-tab" class="tab-content">
       <div class="card">
         <h2>Upload HTML File</h2>
@@ -293,7 +280,6 @@
     </div>
   </div>
 
-  <!-- FULL SCREEN REALISTIC PREVIEW MODAL -->
   <div class="modal-overlay" id="preview-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -457,7 +443,7 @@
 
     // Smart Function: Automatically retries if Google is busy (Error 503)
     async function fetchGeminiWithRetry(apiKey, systemInstruction, prompt, retries = 3) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
       
       for (let i = 0; i < retries; i++) {
         const res = await fetch(url, {
@@ -495,17 +481,19 @@
       document.getElementById('ai-timeline').innerHTML = '';
       aiBtn.disabled = true;
 
+      // ULTIMATE SYSTEM PROMPT: Strict HTML, Native Marathi, Beautiful Design
       const systemInstruction = `You are an API. YOU MUST RESPOND ONLY WITH A RAW JSON OBJECT. DO NOT output conversational text, greetings, or markdown blocks. Start exactly with { and end with }.
-      You are an expert Marathi blog writer. Write a high-quality, native-sounding, SEO-optimized blog post in Marathi.
+      You are an expert Maharashtrian blog writer and Senior UI/UX designer. Write a high-quality, highly engaging, native-sounding, and grammatically flawless blog post in pure, natural Marathi.
       
       IMPORTANT INSTRUCTIONS:
-      1. Format the "content" body in modern HTML. 
-      2. **PREFIX DESIGN:** ALWAYS begin the "content" HTML with a beautiful highlight box summarizing the post. Use this exact structure: <div style='background-color:#fffbeb; padding:20px; border-left:6px solid #f59e0b; border-radius:8px; margin-bottom:25px; box-shadow:0 4px 6px rgba(0,0,0,0.05); font-size:1.05rem; color:#334155;'><strong style='color:#b45309; font-size:1.15rem; display:block; margin-bottom:8px;'>महत्त्वाची माहिती:</strong>[Your summary here]</div>
-      3. Use inline CSS for headings (<h2>), lists (<ul>), and paragraphs.
-      
+      1. STRICTLY NO MARKDOWN: Never use **bold** or *italic* markdown. You MUST use valid HTML tags like <strong>, <b>, or <em>.
+      2. VECTORS & ICONS: Use FontAwesome v6 icons (e.g., <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>) next to your <h2> tags and inside <li> list items to make it visually rich.
+      3. PREFIX DESIGN: ALWAYS begin the "content" HTML with an attractive highlight box summarizing the post. Use this exact structure: <div style='background-color:#fffbeb; padding:20px; border-left:6px solid #f59e0b; border-radius:12px; margin-bottom:25px; box-shadow:0 4px 15px rgba(0,0,0,0.05); font-family: "Noto Sans Devanagari", sans-serif; font-size:1.1rem; color:#334155; line-height:1.8;'><strong style='color:#b45309; font-size:1.2rem; display:block; margin-bottom:12px;'><i class='fa-solid fa-bell fa-shake'></i> महत्त्वाची माहिती:</strong>[Your engaging summary here]</div>
+      4. BEAUTIFUL UI: Use gorgeous inline CSS for all elements. Add padding, soft backgrounds (#f8fafc, #f0fdf4), rounded corners (border-radius: 8px), and modern shadows (box-shadow) to make paragraphs and data tables pop. Ensure all text uses modern fonts.
+
       JSON KEYS TO USE:
       {
-        "title": "Catchy title in Marathi",
+        "title": "Catchy, natural-sounding title in Marathi",
         "title_en": "English translation of the title",
         "excerpt": "A short 2-sentence summary in Marathi",
         "keywords": "comma, separated, seo, tags",
@@ -515,12 +503,11 @@
 
       let resultText = null;
 
-      updateTimeline("Connecting to Google Gemini (3.6-flash)...");
+      updateTimeline("Connecting to Google Gemini (1.5-flash)...");
       try {
         const geminiKey = await getSecret('GEMINI_API_KEY');
         if (!geminiKey) throw new Error("Google Gemini API Key is missing in the database.");
         
-        // This will automatically handle 503 errors without crashing
         resultText = await fetchGeminiWithRetry(geminiKey, systemInstruction, prompt);
         updateTimeline(null, 'success');
         
@@ -534,6 +521,8 @@
 
       updateTimeline("Formatting & rendering your post...");
       try {
+        console.log("Raw AI Output:", resultText); // For debugging
+        
         // Smart JSON Extractor (ignores conversational text)
         const jsonMatch = resultText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("Could not find JSON in the AI response.");
@@ -541,7 +530,6 @@
         const cleanJsonString = jsonMatch[0];
         const aiData = JSON.parse(cleanJsonString);
 
-        // Safely populate fields
         document.getElementById('p-title').value = aiData.title || '';
         document.getElementById('p-title-en').value = aiData.title_en || '';
         document.getElementById('p-excerpt').value = aiData.excerpt || '';
@@ -556,7 +544,7 @@
         updateTimeline(null, 'success');
         setTimeout(() => { 
           document.getElementById('ai-processing-overlay').style.display = 'none'; 
-          showToast(`Success! Generated using Gemini 3.6 Flash.`);
+          showToast(`Success! Generated using Gemini 1.5 Flash.`);
           aiBtn.disabled = false;
         }, 1200);
 
@@ -578,11 +566,11 @@
       refineBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
       refineBtn.disabled = true;
 
-      const systemInstruction = `You are an expert Marathi blog editor. Modify the HTML content based on instructions. Respond ONLY with the completely updated raw HTML. Do not use markdown blocks or conversational text. Maintain all inline CSS styling.`;
+      const systemInstruction = `You are an expert Marathi blog editor. Modify the HTML content based on instructions. Respond ONLY with the completely updated raw HTML. STRICTLY NO MARKDOWN ALLOWED (No ** or *). Use FontAwesome icons (<i class="fa-solid fa-..."></i>) and inline CSS for beautiful UI formatting. Maintain natural Marathi language.`;
 
       try {
         const geminiKey = await getSecret('GEMINI_API_KEY');
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
         
         const res = await fetch(url, {
           method: 'POST',
