@@ -1,4 +1,325 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>Manage Posts - Vitthal Speaks Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700;900&display=swap');
+    
+    :root { 
+      --bg: #f0f2f5; 
+      --card: #ffffff; 
+      --text: #1e293b; 
+      --muted: #64748b; 
+      --primary: #0f172a; 
+      --primary-dark: #020617;
+      --accent: #ff9800; 
+      --border: #e2e8f0; 
+      --success: #10b981; 
+      --danger: #ef4444; 
+    }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 70px; overflow-x: hidden; }
+    a { text-decoration: none; color: inherit; }
+    
+    .app-header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .app-header h1 { margin: 0; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    
+    .container { max-width: 1000px; margin: 0 auto; padding: 15px; width: 100%; }
+    
+    .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 20px; width: 100%; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+    h2 { font-size: 1.2rem; margin: 0; color: var(--primary); }
+
+    .post-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .post-tabs::-webkit-scrollbar { display: none; }
+    .post-tab { background: none; border: none; font-size: 0.95rem; font-weight: 600; color: var(--muted); cursor: pointer; padding: 8px 12px; border-radius: 8px; transition: 0.2s; }
+    .post-tab.active { background: var(--primary); color: white; }
+
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .input-group { margin-bottom: 15px; width: 100%; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--primary-dark); }
+    .input-group label span.required { color: var(--danger); }
+    input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: #f8fafc; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(255,152,0,0.1); }
+
+    .upload-box { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc; transition: 0.2s; }
+    .upload-box i { font-size: 28px; color: var(--accent); margin-bottom: 8px; }
+    .upload-box p { margin: 0; font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+    .img-preview { width: 100%; max-height: 250px; object-fit: contain; border-radius: 8px; margin-top: 12px; display: none; background: #000; }
+
+    .seo-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+    .seo-section h3 { font-size: 1rem; margin-top: 0; margin-bottom: 15px; color: var(--primary); }
+
+    /* AI Section */
+    .ai-section { background: linear-gradient(135deg, #e0f2fe, #dbeafe); border: 1px solid #93c5fd; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15); }
+    .ai-section h3 { margin-top: 0; color: #1e3a8a; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+    .ai-input { background: white !important; border-color: #93c5fd !important; }
+    .btn-ai { background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .btn-ai:hover { background: #1d4ed8; }
+    .btn-ai:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    /* Thumbnail Studio */
+    .thumb-studio { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; border-top: 1px dashed var(--border); padding-top: 20px; }
+    .thumb-card { border-radius: 12px; padding: 15px; border: 1px solid; }
+    .thumb-manual { background: #fff8e1; border-color: #fde68a; }
+    .thumb-ai { background: #e0f2fe; border-color: #93c5fd; }
+
+    .btn { padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+    .btn-primary { background: var(--primary); color: white; width: 100%; }
+    .btn-action { background: #f1f5f9; color: var(--primary); font-size: 0.8rem; }
+    .btn-success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+    .btn-delete { background: #fee2e2; color: #dc2626; }
+
+    .list-item { display: flex; flex-direction: column; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; background: #fff; transition: background 0.3s; }
+    .item-title { font-weight: 700; color: var(--primary); font-size: 1.05rem; margin-bottom: 6px; line-height: 1.4; }
+    .item-meta { font-size: 0.85rem; color: var(--muted); font-weight: 500; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .item-actions { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+    .item-actions .btn { flex: 1; min-width: 80px; }
+    
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+    .badge.published { background: #dcfce7; color: #059669; border: 1px solid #a7f3d0; }
+    .badge.draft { background: #fef9c3; color: #d97706; border: 1px solid #fde68a; }
+    
+    /* Toast */
+    .toast-container { position: fixed; top: 20px; right: -400px; background: white; border-left: 6px solid var(--success); box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 15px 25px; border-radius: 8px; display: flex; align-items: center; gap: 15px; z-index: 9999; transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .toast-container.show { right: 20px; }
+    .toast-container.error { border-left-color: var(--danger); }
+    .toast-icon { background: #dcfce7; color: var(--success); width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .toast-container.error .toast-icon { background: #fee2e2; color: var(--danger); }
+    .toast-message { font-weight: 600; font-size: 0.95rem; color: var(--primary); line-height: 1.4; }
+
+    /* Overlay Timeline */
+    #ai-processing-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.92); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; }
+    .timeline-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 90%; max-width: 450px; text-align: left; border: 1px solid var(--border); }
+    .timeline-card h2 { margin-top: 0; color: var(--primary); font-size: 1.4rem; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; justify-content: center; }
+    #ai-timeline { list-style: none; padding: 0; margin: 0; font-size: 1rem; color: var(--muted); font-weight: 500; }
+    #ai-timeline li { margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-content { background: white; width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    .modal-header { padding: 15px 20px; background: #001f3f; color: white; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10; }
+    .modal-body { padding: 0; flex: 1; background: #f4f6f8; overflow: hidden; }
+    .preview-iframe { width: 100%; height: 100%; border: none; background: transparent; }
+
+    .mobile-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
+    .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); background: none; border: none; font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 5px; }
+    .nav-item i { font-size: 1.1rem; margin-bottom: 4px; }
+    .nav-item.active { color: var(--accent); }
+    .desktop-tabs { display: none; }
+    
+    @media (min-width: 768px) {
+      .mobile-nav { display: none; }
+      body { padding-bottom: 0; }
+      .desktop-tabs { display: flex; gap: 10px; }
+      .desktop-tabs .nav-item { flex-direction: row; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; }
+      .desktop-tabs .nav-item.active { background: var(--accent); color: white; }
+      .desktop-tabs .nav-item i { margin-bottom: 0; margin-right: 8px; font-size: 1rem; }
+      .list-item { flex-direction: row; justify-content: space-between; align-items: center; }
+      .item-actions { width: auto; flex-wrap: nowrap; }
+      .btn-primary { width: auto; }
+      .form-actions { display: flex; gap: 10px; }
+      .thumb-studio { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="app-toast" class="toast-container">
+    <div class="toast-icon" id="toast-icon"><i class="fa-solid fa-check"></i></div>
+    <div class="toast-message" id="toast-message">Action Successful!</div>
+  </div>
+
+  <!-- AI PROCESSING OVERLAY TIMELINE -->
+  <div id="ai-processing-overlay">
+    <div class="timeline-card">
+      <h2><i class="fa-solid fa-microchip fa-bounce" style="color: #2563eb;"></i> Gemini AI Working</h2>
+      <ul id="ai-timeline"></ul>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <h1><span class="live-dot" style="background:#10b981; width:10px; height:10px; border-radius:50%; display:inline-block;"></span> Vitthal Speaks Admin</h1>
+    <div class="desktop-tabs">
+      <a href="index.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+      <a href="post.html" class="nav-item active"><i class="fa-solid fa-newspaper"></i> Posts</a>
+      <a href="ads.html" class="nav-item"><i class="fa-solid fa-bullhorn"></i> Ads</a>
+      <a href="enquiry.html" class="nav-item"><i class="fa-solid fa-envelope"></i> Enquiries</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="post-tabs">
+      <button class="post-tab active" onclick="switchTab('list-tab', this)"><i class="fa-solid fa-list"></i> All Posts</button>
+      <button class="post-tab" onclick="switchTab('editor-tab', this)"><i class="fa-solid fa-pen"></i> Write Post</button>
+      <button class="post-tab" onclick="switchTab('upload-tab', this)"><i class="fa-solid fa-file-code"></i> Upload HTML</button>
+    </div>
+
+    <!-- 1. POST LIST TAB -->
+    <div id="list-tab" class="tab-content active">
+      <div class="card">
+        <div class="card-header">
+          <h2>Live & Draft Posts</h2> 
+          <button class="btn btn-action" onclick="loadBlogs()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+        </div>
+        <div id="blogs-list">Loading posts...</div>
+      </div>
+    </div>
+
+    <!-- 2. EDITOR TAB -->
+    <div id="editor-tab" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 id="form-title">Create New Article</h2>
+          <button class="btn btn-action" onclick="resetBlogForm()"><i class="fa-solid fa-rotate-right"></i> Clear Form</button>
+        </div>
+        
+        <input type="hidden" id="edit-id">
+        <input type="hidden" id="p-media-url">
+
+        <!-- GEMINI AI POST SECTION -->
+        <div class="ai-section">
+          <h3>🪄 Generate Content with Google Gemini</h3>
+          <p style="font-size: 0.85rem; color: #1e3a8a; margin-top: 0; margin-bottom: 12px;">Cascades securely through active high-performance models.</p>
+          <div class="input-group" style="margin-bottom: 12px;">
+            <input type="text" id="ai-prompt" class="ai-input" placeholder="e.g. Write a detailed Marathi post about PM Kisan Yojana...">
+          </div>
+          <button id="btn-ai" class="btn-ai" onclick="generateWithAI()">✨ Generate Blog Content</button>
+
+          <!-- REFINEMENT BOX -->
+          <div id="ai-refine-box" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #93c5fd;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e3a8a; margin-bottom: 6px;">Modify / Refine Existing Text:</label>
+            <div style="display: flex; gap: 10px;">
+              <input type="text" id="ai-refine-prompt" class="ai-input" style="flex: 1;" placeholder="e.g. Expand on the eligibility criteria...">
+              <button id="btn-ai-refine" class="btn-ai" style="width: auto; padding: 10px 15px;" onclick="refineWithAI()">✨ Apply Fix</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STANDARD EDITOR FIELDS -->
+        <div class="input-group"><label>Title (Marathi) <span class="required">*</span></label><input type="text" id="p-title" placeholder="Enter post title"></div>
+        <div class="input-group"><label>HTML Content <span class="required">*</span></label><textarea id="p-content" rows="15" placeholder="Write your HTML content here..."></textarea></div>
+        <div class="input-group"><label>Short Excerpt <span class="required">*</span></label><input type="text" id="p-excerpt" placeholder="Short preview text"></div>
+        
+        <!-- THUMBNAIL STUDIO -->
+        <label style="display: block; font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); margin-top: 25px;"><i class="fa-solid fa-image"></i> Thumbnail Studio</label>
+        <div class="thumb-studio">
+          
+          <div class="thumb-card thumb-manual">
+            <label style="color: #d97706; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 1: Manual Upload</label>
+            <div class="upload-box" onclick="document.getElementById('p-img-upload').click()" style="background: white; border-color: #fde68a; padding: 15px;">
+              <i class="fa-solid fa-cloud-arrow-up" style="color: #d97706; font-size: 20px;"></i><p style="color: #d97706; font-size: 0.8rem;">Click to Upload from Computer</p>
+            </div>
+            <input type="file" id="p-img-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'p-media-url', 'p-img-preview')">
+          </div>
+
+          <div class="thumb-card thumb-ai">
+            <label style="color: #2563eb; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Smart YouTube Thumbnail</label>
+            <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #93c5fd; font-size:0.85rem; margin-bottom:10px;" placeholder="Describe the subject (e.g. Maharashtrian farmer in field)...">
+            <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Design</button>
+            
+            <div id="staged-thumb-container" style="display: none; margin-top: 15px; border-top: 1px dashed #93c5fd; padding-top: 15px;">
+              <p style="font-size: 0.75rem; color: #2563eb; margin:0 0 5px 0; font-weight:600;">Local Preview (Not Uploaded Yet):</p>
+              <img id="staged-thumb-preview" src="" style="width: 100%; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              
+              <div style="display: flex; gap: 5px;">
+                <button id="btn-use-thumb" class="btn btn-success" style="flex: 2; padding: 8px; font-size: 0.8rem;" onclick="uploadStagedThumbnail()"><i class="fa-solid fa-cloud-arrow-up"></i> Upload & Attach</button>
+                <button class="btn btn-action" style="flex: 1; padding: 8px; font-size: 0.8rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-rotate"></i> Redo</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <p style="font-size: 0.85rem; font-weight: 600; color: var(--muted); margin:0 0 5px 0;">Current Attached Thumbnail:</p>
+          <img id="p-img-preview" class="img-preview" style="max-height: 150px; background: #f1f5f9; border: 1px solid #cbd5e1;">
+        </div>
+
+        <div class="seo-section">
+          <h3><i class="fa-solid fa-magnifying-glass-chart"></i> Advanced SEO Settings</h3>
+          <div class="input-group"><label>English Title</label><input type="text" id="p-title-en" placeholder="e.g. Ladki Bahin Yojana"></div>
+          <div class="input-group"><label>Category</label><input type="text" id="p-category" placeholder="e.g. शासकीय योजना"></div>
+          <div class="input-group"><label>URL Slug</label><input type="text" id="p-slug" placeholder="e.g. ladki-bahin-yojana"></div>
+          <div class="input-group"><label>SEO Keywords</label><input type="text" id="p-seo-keywords" placeholder="yojana, maharashtra"></div>
+        </div>
+
+        <div class="input-group">
+          <label>Status</label>
+          <select id="p-status"><option value="published">🟢 Published (Live)</option><option value="draft" selected>🟡 Draft (Hidden)</option></select>
+        </div>
+        <div class="form-actions" style="display: flex; gap: 10px; flex-direction: column;">
+          <button class="btn btn-action" style="width: 100%; padding: 12px; border: 1px solid var(--primary);" onclick="previewEditor()"><i class="fa-solid fa-eye"></i> Full Screen Preview</button>
+          <button class="btn btn-primary" style="width: 100%; padding: 12px;" onclick="savePost()"><i class="fa-solid fa-cloud-arrow-up"></i> Save Post to Database</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. HTML UPLOAD TAB -->
+    <div id="upload-tab" class="tab-content">
+      <div class="card">
+        <h2>Upload HTML File</h2>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 20px;">Upload a pre-written .html file. The system will extract the body securely.</p>
+        
+        <div class="input-group"><label>Title (Marathi) <span class="required">*</span></label><input type="text" id="u-title" placeholder="Enter article title"></div>
+        <div class="input-group"><label>Short Excerpt <span class="required">*</span></label><input type="text" id="u-excerpt" placeholder="Short description"></div>
+        
+        <div class="input-group" style="background: #fff8e1; padding: 15px; border-radius: 12px; border: 1px solid #fde68a;">
+          <label style="color: #d97706; font-size: 1rem;"><i class="fa-solid fa-image"></i> Featured Image (Thumbnail)</label>
+          <div class="upload-box" onclick="document.getElementById('u-img-upload').click()" style="background: white; border-color: #fde68a;">
+            <i class="fa-solid fa-cloud-arrow-up" style="color: #d97706;"></i><p style="color: #d97706;">Click to Upload Thumbnail</p>
+          </div>
+          <input type="file" id="u-img-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'u-media-url', 'u-img-preview')">
+          <img id="u-img-preview" class="img-preview">
+          <input type="hidden" id="u-media-url">
+        </div>
+
+        <div class="seo-section">
+          <h3><i class="fa-solid fa-magnifying-glass-chart"></i> Advanced SEO Settings</h3>
+          <div class="input-group"><label>English Title</label><input type="text" id="u-title-en" placeholder="e.g. MPSC Update"></div>
+          <div class="input-group"><label>Category</label><input type="text" id="u-category" placeholder="e.g. नोकरी"></div>
+          <div class="input-group"><label>URL Slug</label><input type="text" id="u-slug" placeholder="e.g. mpsc-update"></div>
+          <div class="input-group"><label>SEO Keywords</label><input type="text" id="u-seo-keywords" placeholder="mpsc, maharashtra"></div>
+        </div>
+
+        <div class="input-group"><label>Select .html File <span class="required">*</span></label><input type="file" id="u-file" accept=".html" style="background: white; padding: 15px;"></div>
+        <div class="input-group"><label>Status</label><select id="u-status"><option value="published">🟢 Published (Live)</option><option value="draft">🟡 Draft (Hidden)</option></select></div>
+        
+        <button class="btn btn-primary" onclick="uploadHtmlFile()" style="width: 100%; padding: 12px;"><i class="fa-solid fa-upload"></i> Extract & Publish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREVIEW MODAL -->
+  <div class="modal-overlay" id="preview-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin:0; font-size:1.1rem;"><i class="fa-solid fa-desktop"></i> Live Website Preview</h3>
+        <button class="btn" style="background: #ef4444; color: white; border: none; font-size: 0.9rem;" onclick="document.getElementById('preview-modal').style.display='none'"><i class="fa-solid fa-xmark"></i> Close Preview</button>
+      </div>
+      <div class="modal-body">
+        <iframe id="preview-iframe" class="preview-iframe"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <nav class="mobile-nav">
+    <a href="index.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i>Home</a>
+    <a href="post.html" class="nav-item active"><i class="fa-solid fa-newspaper"></i>Posts</a>
+    <a href="ads.html" class="nav-item"><i class="fa-solid fa-bullhorn"></i>Ads</a>
+    <a href="enquiry.html" class="nav-item"><i class="fa-solid fa-envelope"></i>Enquiries</a>
+  </nav>
+
+  <script>
     let allPosts = [];
     let stagedThumbnailBlob = null;
     let toastTimeout;
@@ -107,7 +428,7 @@
       injectPreview(title, content);
     }
 
-    // AI TIMELINE LOGGING
+    // AI TIMELINE LOGGING (Safe update style)
     function updateTimeline(msg, status = "loading") {
       const ul = document.getElementById('ai-timeline');
       if (!ul) return;
@@ -137,19 +458,17 @@
       return typeof data === 'string' ? data.trim() : data;
     }
 
-    // Ultra-compatible API request (Works on older v1.0 and v1.5 models alike)
+    // Ultra-compatible API request (Works on older v1.0, v1.5, and any fallback model)
     async function runGeminiRequest(apiKey, promptText) {
       const cleanKey = apiKey ? apiKey.trim() : '';
       if (!cleanKey) throw new Error("Google API Key is missing.");
 
-      // Use the simplest possible payload. No systemInstructions, no mimeTypes. 
-      // This guarantees it won't crash on older model endpoints.
+      // Simplest payload to guarantee it won't crash on older model endpoints
       const bodyPayload = {
         contents: [{ role: "user", parts: [{ text: promptText }] }],
         generationConfig: { temperature: 0.7 }
       };
 
-      // Priority models (including older fallbacks)
       const modelsToTry = [
         'gemini-1.5-flash',
         'gemini-1.5-pro',
@@ -180,7 +499,6 @@
         }
       }
 
-      // If all specific models fail, query the account for ANY available text model
       updateTimeline("Searching for available text models...");
       try {
         const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`);
@@ -221,7 +539,7 @@
       document.getElementById('ai-timeline').innerHTML = '';
       aiBtn.disabled = true;
 
-      // Ultra strict prompt integrated directly into user message
+      // Deep embedded JSON enforcement for all models
       const strictPrompt = `You are a machine that outputs ONLY valid JSON. 
 DO NOT think out loud. DO NOT write conversational text. DO NOT write markdown outside the JSON.
 Your entire response MUST start exactly with { and end exactly with }.
@@ -262,7 +580,7 @@ RULES FOR "content":
       try {
         let raw = resultObj.text.trim();
         
-        // Failsafe string extraction (Finds first { and last })
+        // Fail-safe manual JSON extraction
         const startIdx = raw.indexOf('{');
         const endIdx = raw.lastIndexOf('}');
         
@@ -656,3 +974,5 @@ ${currentContent}`;
 
     loadBlogs();
   </script>
+</body>
+</html>
