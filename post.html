@@ -85,6 +85,13 @@
     .toast-container.error .toast-icon { background: #fee2e2; color: var(--danger); }
     .toast-message { font-weight: 600; font-size: 0.95rem; color: var(--primary); line-height: 1.4; }
 
+    /* Modern AI Processing Timeline Overlay */
+    #ai-processing-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.92); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; }
+    .timeline-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 90%; max-width: 450px; text-align: left; border: 1px solid var(--border); }
+    .timeline-card h2 { margin-top: 0; color: var(--primary); font-size: 1.4rem; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; justify-content: center; }
+    #ai-timeline { list-style: none; padding: 0; margin: 0; font-size: 1rem; color: var(--muted); font-weight: 500; }
+    #ai-timeline li { margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+
     /* Full Screen Preview Modal */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 0; }
     .modal-content { background: white; width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -119,6 +126,16 @@
   <div id="app-toast" class="toast-container">
     <div class="toast-icon" id="toast-icon"><i class="fa-solid fa-check"></i></div>
     <div class="toast-message" id="toast-message">Action Successful!</div>
+  </div>
+
+  <!-- AI PROCESSING OVERLAY TIMELINE -->
+  <div id="ai-processing-overlay">
+    <div class="timeline-card">
+      <h2><i class="fa-solid fa-microchip fa-bounce" style="color: #9333ea;"></i> AI Architect Working</h2>
+      <ul id="ai-timeline">
+        <!-- Dynamic timeline steps injected here -->
+      </ul>
+    </div>
   </div>
 
   <header class="app-header">
@@ -160,10 +177,10 @@
         <input type="hidden" id="edit-id">
         <input type="hidden" id="p-media-url">
 
-        <!-- GEMINI AI POST SECTION (SECURE DATABASE AUTH) -->
+        <!-- GEMINI & GROQ AI POST SECTION -->
         <div class="ai-section">
-          <h3>🪄 Generate Text Content with Gemini AI</h3>
-          <p style="font-size: 0.85rem; color: #6b21a8; margin-top: 0; margin-bottom: 12px;">Enter a topic. AI will securely pull the server key, write the HTML body, and generate SEO data.</p>
+          <h3>🪄 Generate Text Content with Dual AI Engine</h3>
+          <p style="font-size: 0.85rem; color: #6b21a8; margin-top: 0; margin-bottom: 12px;">Enter a topic. The system will try Google Gemini first, and automatically fall back to Groq if busy.</p>
           <div class="input-group" style="margin-bottom: 12px;">
             <input type="text" id="ai-prompt" class="ai-input" placeholder="e.g. Write a Marathi post about the MPSC exam updates 2026...">
           </div>
@@ -407,49 +424,82 @@
     }
 
     // ==========================================
-    // SECURE SERVER-FETCHED GEMINI AI INTEGRATION
+    // MULTI-AI ENGINE WITH TIMELINE OVERLAY
     // ==========================================
-    async function getGeminiKey() {
-      const { data, error } = await db.rpc('get_secret_key', { secret_name: 'GEMINI_API_KEY' });
-      if (error || !data) throw new Error("Could not retrieve Gemini API key from server database.");
+    
+    // UI Function for Timeline Progress
+    function updateTimeline(msg, status = "loading") {
+      const ul = document.getElementById('ai-timeline');
+      const activeItem = ul.querySelector('.active-step');
+      
+      if (activeItem) {
+        activeItem.classList.remove('active-step');
+        if (status === 'error') {
+          activeItem.innerHTML = `<i class="fa-solid fa-xmark" style="color: #ef4444; width: 20px;"></i> <span style="text-decoration: line-through;">${activeItem.dataset.msg}</span> <span style="color:#ef4444; font-size:0.8rem; margin-left: 5px;">(Failed)</span>`;
+        } else if (status === 'success') {
+          activeItem.innerHTML = `<i class="fa-solid fa-check" style="color: #10b981; width: 20px;"></i> <span style="color: #10b981; font-weight: 700;">${activeItem.dataset.msg}</span>`;
+        }
+      }
+      
+      if (msg) {
+        const li = document.createElement('li');
+        li.className = 'active-step';
+        li.dataset.msg = msg;
+        li.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="color: #9333ea; width: 20px;"></i> <span style="color: #1e293b; font-weight: 600;">${msg}</span>`;
+        ul.appendChild(li);
+      }
+    }
+
+    async function getSecret(secretName) {
+      const { data, error } = await db.rpc('get_secret_key', { secret_name: secretName });
+      if (error || !data) return null;
       return data;
     }
 
-    async function fetchWithRetry(url, options, retries = 3) {
-      const apiKey = await getGeminiKey();
-      const fetchUrl = url.includes('?') ? `${url}&key=${apiKey}` : `${url}?key=${apiKey}`;
+    async function fetchGemini(modelName, apiKey, systemInstruction, prompt) {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: systemInstruction + "\n\nTopic: " + prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        })
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.candidates[0].content.parts[0].text;
+    }
 
-      const fetchOptions = {
-        ...options,
+    async function fetchGroq(apiKey, systemInstruction, prompt) {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: 'POST',
         headers: {
-          ...options.headers,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
-        }
-      };
-
-      for (let i = 0; i < retries; i++) {
-        const response = await fetch(fetchUrl, fetchOptions);
-        if (response.ok) return response;
-        if (response.status === 503 || response.status === 429) {
-          if (i === retries - 1) throw new Error(`Google API high demand (${response.status}). Please try again shortly.`);
-          await new Promise(r => setTimeout(r, 2000 * (i + 1)));
-          continue;
-        }
-        const errText = await response.text();
-        throw new Error(`Google API Error: ${response.status} - ${errText}`);
-      }
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: systemInstruction },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" }
+        })
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.choices[0].message.content;
     }
 
     async function generateWithAI() {
       const prompt = document.getElementById('ai-prompt').value;
-      const aiBtn = document.getElementById('btn-ai');
-
       if (!prompt) return showToast("Please enter a topic for the AI to generate.", "error");
 
-      aiBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating Post Structure...';
-      aiBtn.disabled = true;
+      // Show Overlay Timeline
+      document.getElementById('ai-processing-overlay').style.display = 'flex';
+      document.getElementById('ai-timeline').innerHTML = '';
 
-      const systemInstruction = `You are an expert Marathi blog writer and professional web designer. Write a high-quality, SEO-optimized blog post in Marathi about: "${prompt}".
+      const systemInstruction = `You are an expert Marathi blog writer and professional web designer. Write a high-quality, SEO-optimized blog post in Marathi.
       IMPORTANT INSTRUCTIONS:
       1. Respond ONLY with a valid JSON object. Do not include markdown code blocks. 
       2. Format the "content" body in modern HTML. 
@@ -462,23 +512,61 @@
         "title_en": "English translation of the title",
         "excerpt": "A short 2-sentence summary in Marathi",
         "keywords": "comma, separated, seo, tags",
-        "thumbnail_prompt": "A brief English visual description for the background of a YouTube thumbnail (e.g., 'A beautiful Maharashtrian woman holding a baby in a warm house'). DO NOT ask for text in this prompt.",
+        "thumbnail_prompt": "A brief English visual description for the background of a YouTube thumbnail (e.g., 'A beautiful Maharashtrian family in a modern home').",
         "content": "The full blog HTML starting with the beautiful highlight box described above. Do not use <html> or <body> tags."
       }`;
 
+      let resultText = null;
+      let usedProvider = "";
+
+      // Step 1: Gemini Flash (Fastest)
+      updateTimeline("Connecting to Google Gemini 2.5 Flash...");
       try {
-        const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent`, {
-          method: 'POST',
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: systemInstruction }] }],
-            generationConfig: { responseMimeType: "application/json" }
-          })
-        });
+        const geminiKey = await getSecret('GEMINI_API_KEY');
+        if (!geminiKey) throw new Error("Key missing");
+        resultText = await fetchGemini('gemini-2.5-flash', geminiKey, systemInstruction, prompt);
+        updateTimeline(null, 'success');
+        usedProvider = "Gemini Flash";
+      } catch(err) {
+        updateTimeline(null, 'error');
+      }
 
-        const data = await response.json();
-        if (data.error) throw new Error(data.error.message);
+      // Step 2: Gemini Pro (Advanced)
+      if (!resultText) {
+        updateTimeline("Retrying with Google Gemini 1.5 Pro...");
+        try {
+          const geminiKey = await getSecret('GEMINI_API_KEY');
+          resultText = await fetchGemini('gemini-1.5-pro', geminiKey, systemInstruction, prompt);
+          updateTimeline(null, 'success');
+          usedProvider = "Gemini Pro";
+        } catch(err) {
+          updateTimeline(null, 'error');
+        }
+      }
 
-        let resultText = data.candidates[0].content.parts[0].text;
+      // Step 3: Groq Llama 3 (Fallback)
+      if (!resultText) {
+        updateTimeline("Falling back to Groq (Llama-3 70B)...");
+        try {
+          const groqKey = await getSecret('GROQ_API_KEY');
+          if (!groqKey) throw new Error("Key missing");
+          resultText = await fetchGroq(groqKey, systemInstruction, prompt);
+          updateTimeline(null, 'success');
+          usedProvider = "Groq (Llama-3)";
+        } catch(err) {
+          updateTimeline(null, 'error');
+        }
+      }
+
+      // Step 4: Final Processing
+      if (!resultText) {
+        updateTimeline("All AI engines are busy. Please try again later.", 'error');
+        setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3000);
+        return;
+      }
+
+      updateTimeline("Formatting & rendering your post...");
+      try {
         resultText = resultText.replace(/```json/gi, '').replace(/```/g, '').trim();
         const aiData = JSON.parse(resultText);
 
@@ -489,16 +577,17 @@
         document.getElementById('p-content').value = aiData.content;
         document.getElementById('p-slug').value = aiData.title_en.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
         document.getElementById('p-status').value = 'draft';
-
         document.getElementById('ai-thumb-prompt').value = aiData.thumbnail_prompt || aiData.title_en;
 
-        showToast("Text Content generated successfully!");
-      } catch (err) {
-        console.error(err); 
-        showToast("AI Generation failed. Check console.", "error");
-      } finally {
-        aiBtn.innerHTML = '✨ Generate Blog Content';
-        aiBtn.disabled = false;
+        updateTimeline(null, 'success');
+        setTimeout(() => { 
+          document.getElementById('ai-processing-overlay').style.display = 'none'; 
+          showToast(`Success! Generated using ${usedProvider}.`);
+        }, 1200);
+
+      } catch (parseErr) {
+        updateTimeline("JSON format error. Please try again.", 'error');
+        setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3000);
       }
     }
 
@@ -512,31 +601,34 @@
       refineBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
       refineBtn.disabled = true;
 
-      const systemInstruction = `You are an expert Marathi blog editor. The user wants to modify the following HTML content: "${refinePrompt}"
-      Current HTML: ${currentContent}
-      IMPORTANT: Respond ONLY with the completely updated raw HTML. Do not use markdown blocks. Maintain all beautiful inline CSS styling.`;
+      const systemInstruction = `You are an expert Marathi blog editor. Modify the HTML content based on instructions. Respond ONLY with the completely updated raw HTML. Do not use markdown blocks. Maintain all inline CSS styling.`;
 
       try {
-        const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent`, {
+        // Just try Groq instantly for refinement since it's blazingly fast and reliable for text editing
+        const groqKey = await getSecret('GROQ_API_KEY');
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: 'POST',
+          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: systemInstruction }] }],
-            generationConfig: { responseMimeType: "text/plain" }
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              { role: "system", content: systemInstruction },
+              { role: "user", content: `Instructions: ${refinePrompt}\n\nHTML:\n${currentContent}` }
+            ]
           })
         });
+
+        if(!res.ok) throw new Error("API Failed");
+        const data = await res.json();
+        let newHtml = data.choices[0].message.content;
         
-        const data = await response.json();
-        if (data.error) throw new Error(data.error.message);
-        
-        let newHtml = data.candidates[0].content.parts[0].text;
         newHtml = newHtml.replace(/^```html/i, '').replace(/```$/i, '').trim();
-        
         document.getElementById('p-content').value = newHtml;
         document.getElementById('ai-refine-prompt').value = '';
-        showToast("Content refined successfully!");
+        showToast("Content refined successfully via Groq!");
       } catch (err) {
         console.error(err); 
-        showToast("Refinement failed. " + err.message, "error");
+        showToast("Refinement failed.", "error");
       } finally {
         refineBtn.innerHTML = '✨ Apply Fix';
         refineBtn.disabled = false;
@@ -559,20 +651,16 @@
       btn.disabled = true;
 
       try {
-        // 1. Fetch high-quality background via reliable Flux API
-        // Asking the AI to put the subject on the left and leave the right side clean
         const imagePrompt = encodeURIComponent(`Professional cinematic photography, highly detailed, Maharashtrian cultural context, ${prompt}. The subject is clearly visible on the left side of the frame. The right side is a clean, dark, empty background. NO TEXT, NO LETTERS, completely empty on the right.`);
         const seed = Math.floor(Math.random() * 100000);
-        // Using "model=flux" for high quality photorealistic rendering
         const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1280&height=720&model=flux&nologo=true&seed=${seed}`;
         
         const imgRes = await fetch(imageUrl);
         if (!imgRes.ok) throw new Error("Failed to fetch background image.");
         const bgBlob = await imgRes.blob();
         
-        // 2. Load background into an Image object
         const img = new Image();
-        img.crossOrigin = "Anonymous"; // Allows canvas manipulation
+        img.crossOrigin = "Anonymous"; 
         img.src = URL.createObjectURL(bgBlob);
         
         await new Promise((resolve, reject) => {
@@ -580,28 +668,23 @@
            img.onerror = reject;
         });
 
-        // 3. Setup HTML5 Canvas (1280x720 HD)
         const canvas = document.createElement('canvas');
         canvas.width = 1280;
         canvas.height = 720;
         const ctx = canvas.getContext('2d');
 
-        // Draw Background
         ctx.drawImage(img, 0, 0, 1280, 720);
 
-        // 4. Draw Dark Gradient Overlay on the RIGHT half for the text
         const grd = ctx.createLinearGradient(1280, 0, 400, 0);
-        grd.addColorStop(0, "rgba(35, 10, 50, 0.95)"); // Deep rich purple tone matching the reference
+        grd.addColorStop(0, "rgba(35, 10, 50, 0.95)"); 
         grd.addColorStop(0.6, "rgba(35, 10, 50, 0.75)");
         grd.addColorStop(1, "rgba(0,0,0,0)");
         ctx.fillStyle = grd;
         ctx.fillRect(0, 0, 1280, 720);
 
-        // 5. Draw Yellow Accent Badge
         ctx.fillStyle = "#facc15"; 
         ctx.fillRect(630, 100, 10, 400);
 
-        // 6. Draw perfect Marathi Title
         ctx.fillStyle = "#ffffff";
         ctx.font = "900 75px 'Noto Sans Devanagari', sans-serif";
         ctx.textBaseline = "top";
@@ -610,11 +693,10 @@
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 2;
 
-        // Word Wrap logic for Title (Right side bounding box)
         const words = marathiTitle.split(' ');
         let line = '';
         let y = 100;
-        const maxWidth = 550; // Keep text constrained to the right side
+        const maxWidth = 550; 
 
         for(let i=0; i<words.length; i++) {
             let testLine = line + words[i] + ' ';
@@ -622,17 +704,15 @@
             if(metrics.width > maxWidth && i > 0) {
                 ctx.fillText(line.trim(), 660, y);
                 line = words[i] + ' ';
-                y += 100; // Line height
+                y += 100; 
             } else {
                 line = testLine;
             }
         }
         ctx.fillText(line.trim(), 660, y);
 
-        // 7. Draw "Vitthal Speaks" branding styling below the title
         y += 140;
         
-        // Small yellow pill background
         ctx.fillStyle = "#facc15";
         ctx.shadowBlur = 0;
         ctx.shadowOffsetX = 0;
@@ -641,22 +721,18 @@
         ctx.roundRect(660, y, 320, 50, 8);
         ctx.fill();
 
-        // Text inside the pill
         ctx.fillStyle = "#1e293b";
         ctx.font = "bold 26px sans-serif";
         ctx.fillText("✓ Vitthal Speaks", 680, y + 10);
 
-        // Small subtitle text
         ctx.fillStyle = "#e2e8f0";
         ctx.font = "bold 28px 'Noto Sans Devanagari', sans-serif";
         ctx.shadowBlur = 5;
         ctx.shadowColor = "rgba(0,0,0,0.8)";
         ctx.fillText("नवीन अपडेट्स आणि संपूर्ण माहिती", 660, y + 80);
 
-        // 8. Convert final merged canvas back to Blob
         stagedThumbnailBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
         
-        // Show Local Preview
         const localUrl = URL.createObjectURL(stagedThumbnailBlob);
         document.getElementById('staged-thumb-preview').src = localUrl;
         document.getElementById('staged-thumb-container').style.display = 'block';
