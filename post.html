@@ -478,7 +478,7 @@
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: "llama-3.1-70b-versatile",
           messages: [
             { role: "system", content: systemInstruction },
             { role: "user", content: prompt }
@@ -493,11 +493,14 @@
 
     async function generateWithAI() {
       const prompt = document.getElementById('ai-prompt').value;
+      const aiBtn = document.getElementById('btn-ai');
+      
       if (!prompt) return showToast("Please enter a topic for the AI to generate.", "error");
 
       // Show Overlay Timeline
       document.getElementById('ai-processing-overlay').style.display = 'flex';
       document.getElementById('ai-timeline').innerHTML = '';
+      aiBtn.disabled = true;
 
       const systemInstruction = `You are an expert Marathi blog writer and professional web designer. Write a high-quality, SEO-optimized blog post in Marathi.
       IMPORTANT INSTRUCTIONS:
@@ -520,31 +523,18 @@
       let usedProvider = "";
 
       // Step 1: Gemini Flash (Fastest)
-      updateTimeline("Connecting to Google Gemini 2.5 Flash...");
+      updateTimeline("Connecting to Google Gemini Flash...");
       try {
         const geminiKey = await getSecret('GEMINI_API_KEY');
         if (!geminiKey) throw new Error("Key missing");
-        resultText = await fetchGemini('gemini-2.5-flash', geminiKey, systemInstruction, prompt);
+        resultText = await fetchGemini('gemini-1.5-flash', geminiKey, systemInstruction, prompt);
         updateTimeline(null, 'success');
         usedProvider = "Gemini Flash";
       } catch(err) {
         updateTimeline(null, 'error');
       }
 
-      // Step 2: Gemini Pro (Advanced)
-      if (!resultText) {
-        updateTimeline("Retrying with Google Gemini 1.5 Pro...");
-        try {
-          const geminiKey = await getSecret('GEMINI_API_KEY');
-          resultText = await fetchGemini('gemini-1.5-pro', geminiKey, systemInstruction, prompt);
-          updateTimeline(null, 'success');
-          usedProvider = "Gemini Pro";
-        } catch(err) {
-          updateTimeline(null, 'error');
-        }
-      }
-
-      // Step 3: Groq Llama 3 (Fallback)
+      // Step 2: Groq Llama 3 (Fallback)
       if (!resultText) {
         updateTimeline("Falling back to Groq (Llama-3 70B)...");
         try {
@@ -558,9 +548,10 @@
         }
       }
 
-      // Step 4: Final Processing
+      // Step 3: Final Processing
       if (!resultText) {
         updateTimeline("All AI engines are busy. Please try again later.", 'error');
+        aiBtn.disabled = false;
         setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3000);
         return;
       }
@@ -583,10 +574,12 @@
         setTimeout(() => { 
           document.getElementById('ai-processing-overlay').style.display = 'none'; 
           showToast(`Success! Generated using ${usedProvider}.`);
+          aiBtn.disabled = false;
         }, 1200);
 
       } catch (parseErr) {
         updateTimeline("JSON format error. Please try again.", 'error');
+        aiBtn.disabled = false;
         setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3000);
       }
     }
@@ -610,7 +603,7 @@
           method: 'POST',
           headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
+            model: "llama-3.1-70b-versatile",
             messages: [
               { role: "system", content: systemInstruction },
               { role: "user", content: `Instructions: ${refinePrompt}\n\nHTML:\n${currentContent}` }
