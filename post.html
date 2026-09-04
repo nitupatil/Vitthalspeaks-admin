@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -458,16 +458,21 @@
       return typeof data === 'string' ? data.trim() : data;
     }
 
-    // Ultra-compatible API request (Works on older v1.0, v1.5, and any fallback model)
-    async function runGeminiRequest(apiKey, promptText) {
+    // Ultra-compatible API request (Enforces JSON output natively)
+    async function runGeminiRequest(apiKey, promptText, expectJson = false) {
       const cleanKey = apiKey ? apiKey.trim() : '';
       if (!cleanKey) throw new Error("Google API Key is missing.");
 
-      // Simplest payload to guarantee it won't crash on older model endpoints
+      // Base payload
       const bodyPayload = {
         contents: [{ role: "user", parts: [{ text: promptText }] }],
         generationConfig: { temperature: 0.7 }
       };
+
+      // THIS is the magic command that forces the AI to output pure JSON data
+      if (expectJson) {
+        bodyPayload.generationConfig.responseMimeType = "application/json";
+      }
 
       const modelsToTry = [
         'gemini-1.5-flash',
@@ -540,13 +545,10 @@
       aiBtn.disabled = true;
 
       // Deep embedded JSON enforcement for all models
-      const strictPrompt = `You are a machine that outputs ONLY valid JSON. 
-DO NOT think out loud. DO NOT write conversational text. DO NOT write markdown outside the JSON.
-Your entire response MUST start exactly with { and end exactly with }.
-
+      const strictPrompt = `You are a data API. You MUST output ONLY valid JSON.
 Create a Marathi blog post about: "${topic}"
 
-Use this exact JSON structure:
+Return exactly this JSON structure. Ensure all HTML inside the "content" string uses single quotes for attributes (e.g. style='color:red;') to prevent breaking the JSON:
 {
   "title": "Marathi Title",
   "title_en": "English Translation of Title",
@@ -558,7 +560,7 @@ Use this exact JSON structure:
 
 RULES FOR "content":
 1. Use HTML tags (<strong>, <b>, <h3>, <ul>, <li>, <p>). STRICTLY NO MARKDOWN (** or *).
-2. Use FontAwesome v6 icons (<i class="fa-solid fa-..."></i>) in headings and lists.`;
+2. Use FontAwesome v6 icons (<i class='fa-solid fa-...'></i>) in headings and lists.`;
 
       let resultObj = null;
 
@@ -566,7 +568,8 @@ RULES FOR "content":
         const geminiKey = await getSecret('GEMINI_API_KEY');
         if (!geminiKey) throw new Error("API Key is missing from database.");
         
-        resultObj = await runGeminiRequest(geminiKey, strictPrompt);
+        // Pass "true" to forcefully trigger the application/json mimeType lock
+        resultObj = await runGeminiRequest(geminiKey, strictPrompt, true);
         updateTimeline(null, 'success');
       } catch (err) {
         console.error(err);
@@ -580,17 +583,12 @@ RULES FOR "content":
       try {
         let raw = resultObj.text.trim();
         
-        // Fail-safe manual JSON extraction
-        const startIdx = raw.indexOf('{');
-        const endIdx = raw.lastIndexOf('}');
-        
-        if (startIdx === -1 || endIdx === -1) {
-          console.error("Raw response:", raw);
-          throw new Error("No JSON object found in response.");
+        // Strip markdown backticks in case an older model ignored the JSON parameter
+        if (raw.startsWith("```")) {
+           raw = raw.replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '').trim();
         }
-        
-        const cleanJsonStr = raw.substring(startIdx, endIdx + 1);
-        const aiData = JSON.parse(cleanJsonStr);
+
+        const aiData = JSON.parse(raw);
 
         document.getElementById('p-title').value = aiData.title || '';
         document.getElementById('p-title-en').value = aiData.title_en || '';
@@ -638,7 +636,8 @@ ${currentContent}`;
       try {
         const geminiKey = await getSecret('GEMINI_API_KEY');
         
-        let resultObj = await runGeminiRequest(geminiKey, strictPrompt);
+        // Pass false because we want raw HTML, not JSON
+        let resultObj = await runGeminiRequest(geminiKey, strictPrompt, false);
         let newHtml = resultObj.text.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/i, '').trim();
         
         document.getElementById('p-content').value = newHtml;
@@ -670,7 +669,7 @@ ${currentContent}`;
 
         const imagePrompt = encodeURIComponent(`Professional cinematic photography, highly detailed, Maharashtrian cultural context, ${prompt}. The subject is clearly visible on the left side of the frame. The right side is a clean, dark, empty background. NO TEXT, NO LETTERS.`);
         const seed = Math.floor(Math.random() * 100000);
-        const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1280&height=720&model=flux&nologo=true&seed=${seed}`;
+        const imageUrl = `[https://image.pollinations.ai/prompt/$](https://image.pollinations.ai/prompt/$){imagePrompt}?width=1280&height=720&model=flux&nologo=true&seed=${seed}`;
         
         const imgRes = await fetch(imageUrl);
         if (!imgRes.ok) throw new Error("Failed to fetch background image.");
@@ -783,7 +782,7 @@ ${currentContent}`;
       formData.append('image', stagedThumbnailBlob, 'ai-thumbnail.jpg');
 
       try {
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
+        const res = await fetch(`[https://api.imgbb.com/1/upload?key=$](https://api.imgbb.com/1/upload?key=$){IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
         const data = await res.json();
         
         if (data && data.success) {
@@ -812,7 +811,7 @@ ${currentContent}`;
       formData.append('image', file);
       
       try {
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
+        const res = await fetch(`[https://api.imgbb.com/1/upload?key=$](https://api.imgbb.com/1/upload?key=$){IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
         const data = await res.json();
         if (data && data.success) {
           document.getElementById(hiddenInputId).value = data.data.url;
