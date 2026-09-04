@@ -174,7 +174,7 @@
 
         <div class="ai-section">
           <h3>🪄 Generate Content with Google Gemini</h3>
-          <p style="font-size: 0.85rem; color: #1e3a8a; margin-top: 0; margin-bottom: 12px;">Powered by Gemini Flash. Automatically retries if Google servers are busy.</p>
+          <p style="font-size: 0.85rem; color: #1e3a8a; margin-top: 0; margin-bottom: 12px;">Powered by Gemini. Automatically hunts for active models if servers are busy.</p>
           <div class="input-group" style="margin-bottom: 12px;">
             <input type="text" id="ai-prompt" class="ai-input" placeholder="e.g. Write a detailed Marathi post about PM Kisan Yojana...">
           </div>
@@ -410,7 +410,7 @@
     }
 
     // ==========================================
-    // GEMINI AI ENGINE WITH SMART RETRY LOOP
+    // GEMINI AI ENGINE WITH SMART MODEL HUNTER
     // ==========================================
     
     function updateTimeline(msg, status = "loading") {
@@ -441,34 +441,49 @@
       return data;
     }
 
-    // Smart Function: Automatically retries if Google is busy (Error 503)
-    async function fetchGeminiWithRetry(apiKey, systemInstruction, prompt, retries = 3) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // This central function hunts for a working model automatically
+    async function runGeminiRequest(apiKey, systemInstruction, userText) {
+      // List of highly capable, widely available Gemini models
+      const modelsToTry = [
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-pro'
+      ];
       
-      for (let i = 0; i < retries; i++) {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: systemInstruction + "\n\nTopic: " + prompt }] }]
-          })
-        });
+      for (const model of modelsToTry) {
+        updateTimeline(`Connecting to model: ${model}...`);
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         
-        // If Google is busy, wait 2.5 seconds and loop again
-        if (res.status === 503 && i < retries - 1) {
-          updateTimeline(`Google server busy (503). Retrying silently in 2 seconds... (Attempt ${i + 1}/${retries})`);
-          await new Promise(resolve => setTimeout(resolve, 2500));
-          continue; 
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: systemInstruction + "\n\n" + userText }] }]
+            })
+          });
+          
+          if (res.status === 503) {
+            updateTimeline(`Server busy (503). Retrying ${model} in 2s...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue; 
+          }
+          
+          if (res.status === 404) {
+             console.warn(`Model ${model} not found (404). Switching to next model...`);
+             break; // Breaks the 3-attempt loop, moves immediately to the next model
+          }
+
+          if (!res.ok) {
+             const errText = await res.text();
+             throw new Error(`Google API Error ${res.status}: ${errText}`);
+          }
+          
+          const data = await res.json();
+          return data.candidates[0].content.parts[0].text;
         }
-        
-        if (!res.ok) {
-           const errText = await res.text();
-           throw new Error(`Google API Error ${res.status}: ${errText}`);
-        }
-        
-        const data = await res.json();
-        return data.candidates[0].content.parts[0].text;
       }
+      throw new Error("All Gemini models failed or were not found on this API key.");
     }
 
     async function generateWithAI() {
@@ -481,7 +496,6 @@
       document.getElementById('ai-timeline').innerHTML = '';
       aiBtn.disabled = true;
 
-      // ULTIMATE SYSTEM PROMPT: Strict HTML, Native Marathi, Beautiful Design
       const systemInstruction = `You are an API. YOU MUST RESPOND ONLY WITH A RAW JSON OBJECT. DO NOT output conversational text, greetings, or markdown blocks. Start exactly with { and end with }.
       You are an expert Maharashtrian blog writer and Senior UI/UX designer. Write a high-quality, highly engaging, native-sounding, and grammatically flawless blog post in pure, natural Marathi.
       
@@ -503,27 +517,24 @@
 
       let resultText = null;
 
-      updateTimeline("Connecting to Google Gemini (1.5-flash)...");
       try {
         const geminiKey = await getSecret('GEMINI_API_KEY');
         if (!geminiKey) throw new Error("Google Gemini API Key is missing in the database.");
         
-        resultText = await fetchGeminiWithRetry(geminiKey, systemInstruction, prompt);
+        // This will automatically hunt for a working model
+        resultText = await runGeminiRequest(geminiKey, systemInstruction, "Topic: " + prompt);
         updateTimeline(null, 'success');
         
       } catch(err) {
         console.error(err);
-        updateTimeline("Failed to generate content.", 'error');
+        updateTimeline(err.message || "Failed to generate content.", 'error');
         aiBtn.disabled = false;
-        setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3500);
+        setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 4000);
         return;
       }
 
       updateTimeline("Formatting & rendering your post...");
       try {
-        console.log("Raw AI Output:", resultText); // For debugging
-        
-        // Smart JSON Extractor (ignores conversational text)
         const jsonMatch = resultText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("Could not find JSON in the AI response.");
         
@@ -544,7 +555,7 @@
         updateTimeline(null, 'success');
         setTimeout(() => { 
           document.getElementById('ai-processing-overlay').style.display = 'none'; 
-          showToast(`Success! Generated using Gemini 1.5 Flash.`);
+          showToast(`Success! Generated using Gemini AI.`);
           aiBtn.disabled = false;
         }, 1200);
 
@@ -570,19 +581,9 @@
 
       try {
         const geminiKey = await getSecret('GEMINI_API_KEY');
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+        const userText = "Instructions: " + refinePrompt + "\n\nHTML:\n" + currentContent;
         
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: systemInstruction + "\n\nInstructions: " + refinePrompt + "\n\nHTML:\n" + currentContent }] }]
-          })
-        });
-
-        if(!res.ok) throw new Error("API Failed");
-        const data = await res.json();
-        let newHtml = data.candidates[0].content.parts[0].text;
+        let newHtml = await runGeminiRequest(geminiKey, systemInstruction, userText);
         
         newHtml = newHtml.replace(/^```html/i, '').replace(/```$/i, '').trim();
         document.getElementById('p-content').value = newHtml;
