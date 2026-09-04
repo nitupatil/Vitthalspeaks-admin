@@ -428,17 +428,18 @@
       injectPreview(title, content);
     }
 
-    // AI ENGINE
+    // AI TIMELINE LOGGING (Safe DOM updates)
     function updateTimeline(msg, status = "loading") {
       const ul = document.getElementById('ai-timeline');
+      if (!ul) return;
+
       const activeItem = ul.querySelector('.active-step');
-      
       if (activeItem) {
         activeItem.classList.remove('active-step');
         if (status === 'error') {
-          activeItem.innerHTML = `<i class="fa-solid fa-xmark" style="color: #ef4444; width: 20px;"></i> <span style="text-decoration: line-through;">${activeItem.dataset.msg}</span> <span style="color:#ef4444; font-size:0.8rem; margin-left: 5px;">(Failed)</span>`;
+          activeItem.innerHTML = `<i class="fa-solid fa-xmark" style="color: #ef4444; width: 20px;"></i> <span style="text-decoration: line-through;">${activeItem.dataset.msg || ''}</span>`;
         } else if (status === 'success') {
-          activeItem.innerHTML = `<i class="fa-solid fa-check" style="color: #10b981; width: 20px;"></i> <span style="color: #10b981; font-weight: 700;">${activeItem.dataset.msg}</span>`;
+          activeItem.innerHTML = `<i class="fa-solid fa-check" style="color: #10b981; width: 20px;"></i> <span style="color: #10b981; font-weight: 700;">${activeItem.dataset.msg || ''}</span>`;
         }
       }
       
@@ -454,44 +455,97 @@
     async function getSecret(secretName) {
       const { data, error } = await db.rpc('get_secret_key', { secret_name: secretName });
       if (error || !data) return null;
-      return data;
+      return typeof data === 'string' ? data.trim() : data;
     }
 
-    // Cascades safely through verified production Gemini models
+    // Official Google Gemini REST API executor
     async function runGeminiRequest(apiKey, systemInstruction, userText) {
+      const cleanKey = apiKey ? apiKey.trim() : '';
+      if (!cleanKey) throw new Error("Google Gemini API Key is missing or invalid.");
+
+      const bodyPayload = {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: userText }]
+          }
+        ]
+      };
+
+      if (systemInstruction) {
+        bodyPayload.systemInstruction = {
+          parts: [{ text: systemInstruction }]
+        };
+      }
+
+      // Priority list of verified model IDs from Google AI Studio
       const modelsToTry = [
-        'gemini-2.0-flash',
         'gemini-1.5-flash',
+        'gemini-1.5-flash-latest',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-exp',
         'gemini-1.5-pro'
       ];
-      
+
       for (const model of modelsToTry) {
-        updateTimeline(`Trying model: ${model}...`);
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        updateTimeline(`Calling ${model}...`);
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
         
         try {
           const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: systemInstruction + "\n\n" + userText }] }]
-            })
+            body: JSON.stringify(bodyPayload)
           });
           
-          if (!res.ok) {
-            console.warn(`Model ${model} returned status ${res.status}. Trying next...`);
-            continue; 
+          if (res.ok) {
+            const data = await res.json();
+            const textPart = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (textPart) {
+              return { text: textPart, usedModel: model };
+            }
+          } else {
+            const errBody = await res.text();
+            console.warn(`Model ${model} responded with ${res.status}:`, errBody);
           }
-          
-          const data = await res.json();
-          if (data && data.candidates && data.candidates[0].content.parts[0].text) {
-            return { text: data.candidates[0].content.parts[0].text, usedModel: model };
-          }
-        } catch (e) {
-          console.warn(`Network error on ${model}. Trying next...`);
+        } catch (netErr) {
+          console.warn(`Network error requesting ${model}:`, netErr);
         }
       }
-      throw new Error("All active Gemini models failed. Please check network connectivity and API keys.");
+
+      // Fallback: Query Google for the exact models available on this API key
+      try {
+        updateTimeline("Auto-discovering supported models for your key...");
+        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`);
+        if (listRes.ok) {
+          const listData = await listRes.json();
+          const discovered = (listData.models || [])
+            .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+            .map(m => m.name.replace(/^models\//, ''));
+
+          for (const discoveredModel of discovered) {
+            updateTimeline(`Trying discovered model: ${discoveredModel}...`);
+            const discUrl = `https://generativelanguage.googleapis.com/v1beta/models/${discoveredModel}:generateContent?key=${cleanKey}`;
+            const discRes = await fetch(discUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(bodyPayload)
+            });
+
+            if (discRes.ok) {
+              const data = await discRes.json();
+              const textPart = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (textPart) {
+                return { text: textPart, usedModel: discoveredModel };
+              }
+            }
+          }
+        }
+      } catch (listErr) {
+        console.warn("Could not query model list:", listErr);
+      }
+
+      throw new Error("Could not connect to Gemini models. Check your API key and quotas in Google AI Studio.");
     }
 
     async function generateWithAI() {
@@ -504,30 +558,30 @@
       document.getElementById('ai-timeline').innerHTML = '';
       aiBtn.disabled = true;
 
-      const systemInstruction = `You are an API. YOU MUST RESPOND ONLY WITH A RAW VALID JSON OBJECT. DO NOT output markdown ticks like \`\`\`json. Start exactly with { and end with }.
-      You are an expert Maharashtrian blog writer and Senior UI/UX designer. Write a high-quality, highly engaging, native-sounding, and grammatically flawless blog post in pure, natural Marathi.
-      
-      CRITICAL INSTRUCTIONS:
-      1. STRICTLY NO MARKDOWN: Never use **bold** or *italic* markdown. You MUST use valid HTML tags like <strong>, <b>, or <em>.
-      2. VECTORS & ICONS: Use FontAwesome v6 icons (e.g., <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>) next to your <h2> tags and inside <li> list items to make it visually rich.
-      3. PREFIX DESIGN: ALWAYS begin the "content" HTML with an attractive highlight box summarizing the post. Use this exact structure: <div style='background-color:#fffbeb; padding:20px; border-left:6px solid #f59e0b; border-radius:12px; margin-bottom:25px; box-shadow:0 4px 15px rgba(0,0,0,0.05); font-family: "Noto Sans Devanagari", sans-serif; font-size:1.1rem; color:#334155; line-height:1.8;'><strong style='color:#b45309; font-size:1.2rem; display:block; margin-bottom:12px;'><i class='fa-solid fa-bell fa-shake'></i> महत्त्वाची माहिती:</strong>[Your engaging summary here]</div>
-      4. BEAUTIFUL UI: Use inline CSS for clean formatting: padding, soft backgrounds (#f8fafc, #f0fdf4), rounded corners (border-radius: 8px), and modern shadows.
+      const systemInstruction = `You are an API that outputs STRICT RAW JSON only. Do not wrap in markdown or backticks. Start directly with { and end with }.
+You are an expert Maharashtrian blog writer. Write a high-quality blog post in pure, natural Marathi.
 
-      JSON STRUCTURE:
-      {
-        "title": "Catchy, natural-sounding title in Marathi",
-        "title_en": "English translation of the title",
-        "excerpt": "A short 2-sentence summary in Marathi",
-        "keywords": "comma, separated, seo, tags",
-        "thumbnail_prompt": "A brief English visual description for the background of a YouTube thumbnail.",
-        "content": "The full blog HTML starting with the beautiful highlight box described above."
-      }`;
+CRITICAL INSTRUCTIONS:
+1. STRICTLY NO MARKDOWN: Never use ** or * marks. You MUST use valid HTML tags like <strong>, <b>, <h3>, <p>.
+2. VECTORS & ICONS: Use FontAwesome v6 icons (<i class="fa-solid fa-circle-check" style="color:#10b981;"></i>) beside headings and inside lists.
+3. HIGHLIGHT BOX: Always start the "content" HTML with an attractive summary card:
+<div style='background-color:#fffbeb; padding:20px; border-left:6px solid #f59e0b; border-radius:12px; margin-bottom:25px; box-shadow:0 4px 15px rgba(0,0,0,0.05); font-size:1.1rem; color:#334155; line-height:1.8;'><strong style='color:#b45309; font-size:1.2rem; display:block; margin-bottom:12px;'><i class='fa-solid fa-bell fa-shake'></i> महत्त्वाची माहिती:</strong>[Engaging Marathi summary]</div>
+
+JSON FORMAT:
+{
+  "title": "Marathi Title",
+  "title_en": "English Title",
+  "excerpt": "Short 2 sentence Marathi summary",
+  "keywords": "marathi, keywords, tags",
+  "thumbnail_prompt": "English visual scene description for thumbnail image generation",
+  "content": "Full HTML content beginning with the highlight card"
+}`;
 
       let resultObj = null;
 
       try {
         const geminiKey = await getSecret('GEMINI_API_KEY');
-        if (!geminiKey) throw new Error("Google Gemini API Key is missing in the database.");
+        if (!geminiKey) throw new Error("Google Gemini API Key is missing from database RPC.");
         
         resultObj = await runGeminiRequest(geminiKey, systemInstruction, "Topic: " + prompt);
         updateTimeline(null, 'success');
@@ -564,7 +618,7 @@
           document.getElementById('ai-processing-overlay').style.display = 'none'; 
           showToast(`Generated successfully with ${resultObj.usedModel}!`);
           aiBtn.disabled = false;
-        }, 1200);
+        }, 1000);
       } catch (parseErr) {
         console.error("JSON Parsing Error:", parseErr);
         updateTimeline("AI output formatting issue. Check console.", 'error');
@@ -583,7 +637,7 @@
       refineBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
       refineBtn.disabled = true;
 
-      const systemInstruction = `You are an expert Marathi blog editor. Modify the HTML content strictly based on instructions. Respond ONLY with the completely updated raw HTML. STRICTLY NO MARKDOWN ALLOWED (No ** or *). Use FontAwesome icons (<i class="fa-solid fa-..."></i>) and inline CSS for clean layout.`;
+      const systemInstruction = `You are an expert Marathi editor. Modify the HTML content strictly based on instructions. Respond ONLY with the raw updated HTML without markdown ticks.`;
 
       try {
         const geminiKey = await getSecret('GEMINI_API_KEY');
@@ -597,7 +651,7 @@
         showToast(`Refined successfully with ${resultObj.usedModel}!`);
       } catch (err) {
         console.error(err); 
-        showToast("Refinement failed. Try again.", "error");
+        showToast("Refinement failed: " + err.message, "error");
       } finally {
         refineBtn.innerHTML = '✨ Apply Fix';
         refineBtn.disabled = false;
@@ -683,7 +737,7 @@
         }
         ctx.fillText(line.trim(), 660, y);
 
-        // Branding badge placed below text dynamically
+        // Branding badge
         y += 110;
         ctx.fillStyle = "#facc15";
         ctx.shadowBlur = 0;
