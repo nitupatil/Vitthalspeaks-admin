@@ -8,6 +8,8 @@
   <script src="config.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700;900&display=swap');
+    
     :root { --bg: #f0f2f5; --card: #ffffff; --text: #1e293b; --muted: #64748b; --primary: #0f172a; --accent: #ff9800; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
     * { box-sizing: border-box; }
     body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 70px; overflow-x: hidden; }
@@ -77,6 +79,14 @@
     
     .status-msg { text-align: center; font-weight: 600; margin-top: 10px; }
 
+    /* Custom Toast Notification */
+    .toast-container { position: fixed; top: 20px; right: -400px; background: white; border-left: 6px solid var(--success); box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 15px 25px; border-radius: 8px; display: flex; align-items: center; gap: 15px; z-index: 9999; transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .toast-container.show { right: 20px; }
+    .toast-container.error { border-left-color: var(--danger); }
+    .toast-icon { background: #dcfce7; color: var(--success); width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .toast-container.error .toast-icon { background: #fee2e2; color: var(--danger); }
+    .toast-message { font-weight: 600; font-size: 0.95rem; color: var(--primary); line-height: 1.4; }
+
     /* Full Screen Preview Modal */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 0; }
     .modal-content { background: white; width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -107,6 +117,12 @@
 </head>
 <body>
 
+  <!-- TOAST NOTIFICATION -->
+  <div id="app-toast" class="toast-container">
+    <div class="toast-icon" id="toast-icon"><i class="fa-solid fa-check"></i></div>
+    <div class="toast-message" id="toast-message">Action Successful!</div>
+  </div>
+
   <header class="app-header">
     <h1><span class="live-dot" style="background:#10b981; width:10px; height:10px; border-radius:50%; display:inline-block;"></span> Vitthal Speaks Admin</h1>
     <div class="desktop-tabs">
@@ -124,6 +140,7 @@
       <button class="post-tab" onclick="switchTab('upload-tab', this)"><i class="fa-solid fa-file-code"></i> Upload HTML</button>
     </div>
 
+    <!-- 1. POST LIST TAB -->
     <div id="list-tab" class="tab-content active">
       <div class="card">
         <div class="card-header">
@@ -134,6 +151,7 @@
       </div>
     </div>
 
+    <!-- 2. EDITOR TAB -->
     <div id="editor-tab" class="tab-content">
       <div class="card">
         <div class="card-header">
@@ -144,6 +162,7 @@
         <input type="hidden" id="edit-id">
         <input type="hidden" id="p-media-url">
 
+        <!-- GEMINI AI POST SECTION (SECURE DATABASE AUTH) -->
         <div class="ai-section">
           <h3>🪄 Generate Text Content with Gemini AI</h3>
           <p style="font-size: 0.85rem; color: #6b21a8; margin-top: 0; margin-bottom: 12px;">Enter a topic. AI will securely pull the server key, write the HTML body, and generate SEO data.</p>
@@ -152,6 +171,7 @@
           </div>
           <button id="btn-ai" class="btn-ai" onclick="generateWithAI()">✨ Generate Blog Content</button>
 
+          <!-- REFINEMENT BOX -->
           <div id="ai-refine-box" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #d8b4fe;">
             <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #7e22ce; margin-bottom: 6px;">Modify / Refine Existing Text:</label>
             <div style="display: flex; gap: 10px;">
@@ -161,13 +181,16 @@
           </div>
         </div>
 
+        <!-- STANDARD EDITOR FIELDS -->
         <div class="input-group"><label>Title (Marathi) <span class="required">*</span></label><input type="text" id="p-title" placeholder="Enter post title"></div>
         <div class="input-group"><label>HTML Content <span class="required">*</span></label><textarea id="p-content" rows="15" placeholder="Write your HTML content here..."></textarea></div>
         <div class="input-group"><label>Short Excerpt <span class="required">*</span></label><input type="text" id="p-excerpt" placeholder="Short preview text"></div>
         
+        <!-- THUMBNAIL STUDIO -->
         <label style="display: block; font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); margin-top: 25px;"><i class="fa-solid fa-image"></i> Thumbnail Studio</label>
         <div class="thumb-studio">
           
+          <!-- Manual Upload -->
           <div class="thumb-card thumb-manual">
             <label style="color: #d97706; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 1: Manual Upload</label>
             <div class="upload-box" onclick="document.getElementById('p-img-upload').click()" style="background: white; border-color: #fde68a; padding: 15px;">
@@ -176,11 +199,13 @@
             <input type="file" id="p-img-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'p-media-url', 'p-img-preview', 'p-msg')">
           </div>
 
+          <!-- AI Generator -->
           <div class="thumb-card thumb-ai">
-            <label style="color: #7e22ce; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Generate Google Imagen 3</label>
-            <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8b4fe; font-size:0.85rem; margin-bottom:10px;" placeholder="Background description (e.g. Marathi people in office)...">
-            <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Thumbnail</button>
+            <label style="color: #7e22ce; font-size: 0.95rem; font-weight: 600; display: block; margin-bottom: 10px;">Option 2: Smart YouTube Thumbnail</label>
+            <input type="text" id="ai-thumb-prompt" class="ai-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8b4fe; font-size:0.85rem; margin-bottom:10px;" placeholder="Describe the background subject (e.g. Maharashtrian family)...">
+            <button id="btn-gen-thumb" class="btn-ai" style="padding: 8px; font-size: 0.85rem;" onclick="generateAIThumbnail()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Design</button>
             
+            <!-- Local Staging Area -->
             <div id="staged-thumb-container" style="display: none; margin-top: 15px; border-top: 1px dashed #d8b4fe; padding-top: 15px;">
               <p style="font-size: 0.75rem; color: #7e22ce; margin:0 0 5px 0; font-weight:600;">Local Preview (Not Uploaded Yet):</p>
               <img id="staged-thumb-preview" src="" style="width: 100%; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -219,6 +244,7 @@
       </div>
     </div>
 
+    <!-- 3. HTML UPLOAD TAB -->
     <div id="upload-tab" class="tab-content">
       <div class="card">
         <h2>Upload HTML File</h2>
@@ -254,6 +280,7 @@
     </div>
   </div>
 
+  <!-- FULL SCREEN REALISTIC PREVIEW MODAL -->
   <div class="modal-overlay" id="preview-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -276,6 +303,26 @@
   <script>
     let allPosts = [];
     let stagedThumbnailBlob = null;
+    let toastTimeout;
+
+    // Toast Notification System
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('app-toast');
+      const icon = document.getElementById('toast-icon');
+      document.getElementById('toast-message').innerText = message;
+      
+      if (type === 'error') {
+        toast.classList.add('error');
+        icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+      } else {
+        toast.classList.remove('error');
+        icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+      }
+
+      toast.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => toast.classList.remove('show'), 4000);
+    }
 
     const LIVE_SITE_CSS = "@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&display=swap'); body { font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif; background: #f4f6f8; color: #1e293b; line-height: 1.7; margin: 0; padding: 20px; } .container { max-width: 1000px; margin: 0 auto; } .article-card { background: #ffffff; border-radius: 12px; padding: 35px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; } .article-title { font-size: 2.2rem; font-weight: 800; color: #000000; line-height: 1.3; margin: 0 0 15px; } .article-content { font-size: 1.15rem; line-height: 1.8; color: #333; overflow-wrap: break-word; } .article-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); } @media (max-width: 768px) { body { padding: 0; background: #fff; } .article-card { padding: 20px 16px; border: none; border-radius: 0; box-shadow: none; } .article-title { font-size: 1.8rem; } }";
 
@@ -328,7 +375,7 @@
     function copyLink(slug) {
       const url = `${FULL_SITE_URL}/${slug}`;
       navigator.clipboard.writeText(url);
-      alert("Live Link Copied!\n\n" + url);
+      showToast("Live Link Copied to Clipboard!");
     }
 
     function injectPreview(title, content) {
@@ -374,7 +421,6 @@
 
     async function fetchWithRetry(url, options, retries = 3) {
       const apiKey = await getGeminiKey();
-      
       const fetchUrl = url.includes('?') ? `${url}&key=${apiKey}` : `${url}?key=${apiKey}`;
 
       const fetchOptions = {
@@ -402,7 +448,7 @@
       const prompt = document.getElementById('ai-prompt').value;
       const aiBtn = document.getElementById('btn-ai');
 
-      if (!prompt) return alert("Please enter a topic for the AI to generate.");
+      if (!prompt) return showToast("Please enter a topic for the AI to generate.", "error");
 
       aiBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating Post Structure...';
       aiBtn.disabled = true;
@@ -420,7 +466,7 @@
         "title_en": "English translation of the title",
         "excerpt": "A short 2-sentence summary in Marathi",
         "keywords": "comma, separated, seo, tags",
-        "thumbnail_prompt": "A brief English visual description for the background of a YouTube thumbnail (e.g., 'Modern office desk', 'Maharashtrian village scene'). DO NOT ask for text in this prompt.",
+        "thumbnail_prompt": "A brief English visual description for the background of a YouTube thumbnail (e.g., 'A beautiful Maharashtrian woman holding a baby in a warm house'). DO NOT ask for text in this prompt.",
         "content": "The full blog HTML starting with the beautiful highlight box described above. Do not use <html> or <body> tags."
       }`;
 
@@ -450,10 +496,10 @@
 
         document.getElementById('ai-thumb-prompt').value = aiData.thumbnail_prompt || aiData.title_en;
 
-        alert("Text Content generated successfully! You can now scroll down to the Thumbnail Studio to generate a smart image.");
+        showToast("Text Content generated successfully!");
       } catch (err) {
         console.error(err); 
-        alert("AI Generation failed. \n\nError details: " + err.message);
+        showToast("AI Generation failed. Check console.", "error");
       } finally {
         aiBtn.innerHTML = '✨ Generate Blog Content';
         aiBtn.disabled = false;
@@ -465,7 +511,7 @@
       const currentContent = document.getElementById('p-content').value;
       const refineBtn = document.getElementById('btn-ai-refine');
 
-      if (!refinePrompt || !currentContent) return alert("Please enter both current content and refinement instructions.");
+      if (!refinePrompt || !currentContent) return showToast("Enter both content and refinement instructions.", "error");
       
       refineBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
       refineBtn.disabled = true;
@@ -491,9 +537,10 @@
         
         document.getElementById('p-content').value = newHtml;
         document.getElementById('ai-refine-prompt').value = '';
+        showToast("Content refined successfully!");
       } catch (err) {
         console.error(err); 
-        alert("Refinement failed. " + err.message);
+        showToast("Refinement failed. " + err.message, "error");
       } finally {
         refineBtn.innerHTML = '✨ Apply Fix';
         refineBtn.disabled = false;
@@ -501,64 +548,128 @@
     }
 
     // ==========================================
-    // NATIVE IMAGEN 3 THUMBNAIL STUDIO LOGIC
+    // ADVANCED CANVAS THUMBNAIL ENGINE
     // ==========================================
 
     async function generateAIThumbnail() {
       const prompt = document.getElementById('ai-thumb-prompt').value;
       const marathiTitle = document.getElementById('p-title').value;
 
-      if(!prompt) return alert("Please enter an image description first.");
-      if(!marathiTitle) return alert("Please generate the blog post first so we have a Marathi title for the thumbnail.");
+      if(!prompt) return showToast("Please enter an image description first.", "error");
+      if(!marathiTitle) return showToast("Please generate the post first to get a Title.", "error");
       
       const btn = document.getElementById('btn-gen-thumb');
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating Native AI Image...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Designing Layout...';
       btn.disabled = true;
 
       try {
-        // Constructing a perfect prompt for Google Imagen 3 to natively render the layout and text
-        const fullPrompt = `A professional YouTube thumbnail. Extremely high quality, vibrant colors. Include large, bold, clearly readable Devanagari text exactly reading: "${marathiTitle}". Below the main title, add smaller text details or vector icons. The background features: ${prompt}. Incorporate Marathi people and Maharashtrian cultural elements in a modern, cinematic style.`;
-
-        const requestBody = {
-          instances: [
-            { prompt: fullPrompt }
-          ],
-          parameters: {
-            sampleCount: 1,
-            aspectRatio: "16:9",
-            personGeneration: "allow_adult"
-          }
-        };
-
-        const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict`, {
-          method: 'POST',
-          body: JSON.stringify(requestBody)
+        // 1. Fetch high-quality background via reliable Flux API
+        // Asking the AI to leave space on the right for text layout
+        const imagePrompt = encodeURIComponent(`Professional cinematic photography, highly detailed, Maharashtrian cultural context, ${prompt}. The subject is on the left side. The right side is a clean empty background. NO TEXT, NO LETTERS.`);
+        const seed = Math.floor(Math.random() * 100000);
+        const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1280&height=720&nologo=true&seed=${seed}`;
+        
+        const imgRes = await fetch(imageUrl);
+        if (!imgRes.ok) throw new Error("Failed to fetch background image.");
+        const bgBlob = await imgRes.blob();
+        
+        // 2. Load background into an Image object
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; // Allows canvas manipulation
+        img.src = URL.createObjectURL(bgBlob);
+        
+        await new Promise((resolve, reject) => {
+           img.onload = resolve;
+           img.onerror = reject;
         });
 
-        const data = await response.json();
-        
-        if (data.error) throw new Error(data.error.message);
-        if (!data.predictions || !data.predictions[0] || !data.predictions[0].bytesBase64Encoded) {
-            throw new Error("No image data returned from Gemini API.");
-        }
+        // 3. Setup HTML5 Canvas (1280x720 HD)
+        const canvas = document.createElement('canvas');
+        canvas.width = 1280;
+        canvas.height = 720;
+        const ctx = canvas.getContext('2d');
 
-        const base64Data = data.predictions[0].bytesBase64Encoded;
-        const mimeType = data.predictions[0].mimeType || 'image/jpeg';
-        const imgUrl = `data:${mimeType};base64,${base64Data}`;
+        // Draw Background
+        ctx.drawImage(img, 0, 0, 1280, 720);
+
+        // 4. Draw Dark Gradient Overlay on the RIGHT half for the text
+        const grd = ctx.createLinearGradient(1280, 0, 400, 0);
+        grd.addColorStop(0, "rgba(25, 0, 50, 0.95)"); // Deep purple/dark tone like your sample
+        grd.addColorStop(0.6, "rgba(25, 0, 50, 0.7)");
+        grd.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 1280, 720);
+
+        // 5. Draw Yellow Accent Badge
+        ctx.fillStyle = "#facc15"; 
+        ctx.fillRect(650, 100, 10, 400);
+
+        // 6. Draw perfect Marathi Title
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "900 75px 'Noto Sans Devanagari', sans-serif";
+        ctx.textBaseline = "top";
+        ctx.shadowColor = "rgba(0,0,0,0.8)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+
+        // Word Wrap logic for Title (Right side bounding box)
+        const words = marathiTitle.split(' ');
+        let line = '';
+        let y = 100;
+        const maxWidth = 550; // Keep text constrained to the right side
+
+        for(let i=0; i<words.length; i++) {
+            let testLine = line + words[i] + ' ';
+            let metrics = ctx.measureText(testLine);
+            if(metrics.width > maxWidth && i > 0) {
+                ctx.fillText(line.trim(), 680, y);
+                line = words[i] + ' ';
+                y += 100; // Line height
+            } else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line.trim(), 680, y);
+
+        // 7. Draw "Vitthal Speaks" branding styling below the title
+        y += 140;
         
-        // Convert Base64 data string to an actual Blob for the file upload preview
-        const res = await fetch(imgUrl);
-        stagedThumbnailBlob = await res.blob();
+        // Small yellow pill background
+        ctx.fillStyle = "#facc15";
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.beginPath();
+        ctx.roundRect(680, y, 320, 50, 8);
+        ctx.fill();
+
+        // Text inside the pill
+        ctx.fillStyle = "#1e293b";
+        ctx.font = "bold 26px sans-serif";
+        ctx.fillText("✓ Vitthal Speaks", 700, y + 10);
+
+        // Small subtitle text
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "bold 28px 'Noto Sans Devanagari', sans-serif";
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = "rgba(0,0,0,0.8)";
+        ctx.fillText("नवीन अपडेट्स आणि संपूर्ण माहिती", 680, y + 80);
+
+        // 8. Convert final merged canvas back to Blob
+        stagedThumbnailBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
         
+        // Show Local Preview
         const localUrl = URL.createObjectURL(stagedThumbnailBlob);
         document.getElementById('staged-thumb-preview').src = localUrl;
         document.getElementById('staged-thumb-container').style.display = 'block';
 
+        showToast("Thumbnail Designed Successfully!");
       } catch (e) {
         console.error(e); 
-        alert("Failed to generate smart thumbnail. \n\n" + e.message);
+        showToast("Failed to generate smart thumbnail.", "error");
       } finally {
-        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Thumbnail';
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Native Design';
         btn.disabled = false;
       }
     }
@@ -570,8 +681,6 @@
       
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
       btn.disabled = true;
-      msg.style.color = "var(--primary)";
-      msg.innerText = "Uploading generated image to ImageBB...";
 
       const formData = new FormData();
       formData.append('image', stagedThumbnailBlob, 'ai-thumbnail.jpg');
@@ -588,12 +697,10 @@
           document.getElementById('staged-thumb-container').style.display = 'none';
           stagedThumbnailBlob = null;
           
-          msg.style.color = "var(--success)";
-          msg.innerText = "Thumbnail Uploaded and Attached Successfully!";
-          setTimeout(() => msg.innerText = "", 3000);
+          showToast("Thumbnail Attached Successfully!");
         } else { throw new Error('Upload failed'); }
       } catch (e) {
-        msg.style.color = "red"; msg.innerText = "Image upload failed!";
+        showToast("Image upload failed!", "error");
       } finally {
         btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Upload & Attach';
         btn.disabled = false;
@@ -603,8 +710,6 @@
     async function handleImageUpload(e, hiddenInputId, previewImgId, statusMsgId) {
       const file = e.target.files[0];
       if (!file) return;
-      document.getElementById(statusMsgId).style.color = "var(--primary)";
-      document.getElementById(statusMsgId).innerText = "Uploading thumbnail manually...";
       const formData = new FormData(); formData.append('image', file);
       try {
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMAGEBB_API_KEY}`, { method: 'POST', body: formData });
@@ -613,13 +718,10 @@
           document.getElementById(hiddenInputId).value = data.data.url;
           document.getElementById(previewImgId).src = data.data.url;
           document.getElementById(previewImgId).style.display = 'block';
-          document.getElementById(statusMsgId).style.color = "var(--success)";
-          document.getElementById(statusMsgId).innerText = "Manual Upload Successful!";
-          setTimeout(() => document.getElementById(statusMsgId).innerText = "", 3000);
+          showToast("Manual Upload Successful!");
         } else { throw new Error('Upload failed'); }
       } catch (err) { 
-        document.getElementById(statusMsgId).style.color = "red";
-        document.getElementById(statusMsgId).innerText = "Upload failed!"; 
+        showToast("Manual Upload failed!", "error"); 
       }
       e.target.value = '';
     }
@@ -654,11 +756,8 @@
       const content = document.getElementById('p-content').value;
       const excerpt = document.getElementById('p-excerpt').value;
       const status = document.getElementById('p-status').value;
-      const msg = document.getElementById('p-msg');
 
-      if(!title || !content || !excerpt) return alert("Title, Excerpt, and Content are strictly required.");
-      msg.style.color = "var(--primary)";
-      msg.innerText = "Saving to database...";
+      if(!title || !content || !excerpt) return showToast("Title, Excerpt, and Content are strictly required.", "error");
 
       let rawSlug = document.getElementById('p-slug').value || document.getElementById('p-title-en').value || title;
       let slug = rawSlug.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '').toLowerCase() || 'post-'+Date.now();
@@ -686,9 +785,9 @@
         ({ error } = await db.from('blogs').insert([payload]));
       }
 
-      if(error) { msg.style.color = "red"; msg.innerText = error.message; }
+      if(error) { showToast(error.message, "error"); }
       else { 
-        msg.style.color = "green"; msg.innerText = "Successfully saved! GitHub will rebuild your website."; 
+        showToast("Successfully saved! GitHub will rebuild."); 
         setTimeout(()=> { window.location.reload(); }, 2000);
       }
     }
@@ -698,12 +797,9 @@
       const fileInput = document.getElementById('u-file');
       const excerpt = document.getElementById('u-excerpt').value;
       const status = document.getElementById('u-status').value;
-      const msg = document.getElementById('u-msg');
       
-      if(!title || !excerpt || !fileInput.files[0]) return alert("Title, Excerpt, and HTML file are strictly required.");
+      if(!title || !excerpt || !fileInput.files[0]) return showToast("Title, Excerpt, and HTML file are strictly required.", "error");
 
-      msg.style.color = "var(--primary)";
-      msg.innerText = "Extracting HTML securely...";
       const reader = new FileReader();
       
       reader.onload = async function(e) {
@@ -722,15 +818,14 @@
         const payload = { 
           title, title_en: document.getElementById('u-title-en').value, category: document.getElementById('u-category').value,
           slug, excerpt, content, status, views: 0, seo_keywords: document.getElementById('u-seo-keywords').value,
-          featured_image: document.getElementById('p-media-url').value, created_at: new Date().toISOString() 
+          featured_image: document.getElementById('u-media-url').value, created_at: new Date().toISOString() 
         };
         if(status === 'published') payload.published_at = new Date().toISOString();
 
-        msg.innerText = "Saving to database...";
         const { error } = await db.from('blogs').insert([payload]);
-        if(error) { msg.style.color = "red"; msg.innerText = error.message; }
+        if(error) { showToast(error.message, "error"); }
         else {
-          msg.style.color = "green"; msg.innerText = "Uploaded successfully! GitHub will rebuild.";
+          showToast("Uploaded successfully! GitHub will rebuild.");
           setTimeout(()=>{ window.location.reload(); }, 2000);
         }
       };
