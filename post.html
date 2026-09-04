@@ -428,7 +428,7 @@
       injectPreview(title, content);
     }
 
-    // AI TIMELINE LOGGING (Safe DOM updates)
+    // AI TIMELINE LOGGING (Safe DOM updates to prevent extension crashes)
     function updateTimeline(msg, status = "loading") {
       const ul = document.getElementById('ai-timeline');
       if (!ul) return;
@@ -458,32 +458,28 @@
       return typeof data === 'string' ? data.trim() : data;
     }
 
-    // Official Google Gemini REST API executor
-    async function runGeminiRequest(apiKey, systemInstruction, userText) {
+    // Official Google Gemini REST API executor with Structured JSON output toggle
+    async function runGeminiRequest(apiKey, systemInstruction, userText, expectJson = true) {
       const cleanKey = apiKey ? apiKey.trim() : '';
       if (!cleanKey) throw new Error("Google Gemini API Key is missing or invalid.");
 
       const bodyPayload = {
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: userText }]
-          }
-        ]
+        contents: [{ role: "user", parts: [{ text: userText }] }],
+        generationConfig: { temperature: 0.7 }
       };
 
-      if (systemInstruction) {
-        bodyPayload.systemInstruction = {
-          parts: [{ text: systemInstruction }]
-        };
+      if (expectJson) {
+        bodyPayload.generationConfig.responseMimeType = "application/json";
       }
 
-      // Priority list of verified model IDs from Google AI Studio
+      if (systemInstruction) {
+        bodyPayload.systemInstruction = { parts: [{ text: systemInstruction }] };
+      }
+
+      // Priority list of highly stable, available text generation models
       const modelsToTry = [
         'gemini-1.5-flash',
-        'gemini-1.5-flash-latest',
-        'gemini-2.0-flash',
-        'gemini-2.0-flash-exp',
+        'gemini-1.5-flash-8b',
         'gemini-1.5-pro'
       ];
 
@@ -505,22 +501,28 @@
               return { text: textPart, usedModel: model };
             }
           } else {
-            const errBody = await res.text();
-            console.warn(`Model ${model} responded with ${res.status}:`, errBody);
+            console.warn(`Model ${model} responded with ${res.status}`);
           }
         } catch (netErr) {
           console.warn(`Network error requesting ${model}:`, netErr);
         }
       }
 
-      // Fallback: Query Google for the exact models available on this API key
+      // Fallback: Dynamic list query excluding non-text/TTS models
       try {
-        updateTimeline("Auto-discovering supported models for your key...");
+        updateTimeline("Auto-discovering available text models...");
         const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`);
         if (listRes.ok) {
           const listData = await listRes.json();
           const discovered = (listData.models || [])
-            .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+            .filter(m => 
+              m.supportedGenerationMethods && 
+              m.supportedGenerationMethods.includes('generateContent') &&
+              !m.name.includes('tts') && 
+              !m.name.includes('embedding') &&
+              !m.name.includes('image') &&
+              !m.name.includes('vision')
+            )
             .map(m => m.name.replace(/^models\//, ''));
 
           for (const discoveredModel of discovered) {
@@ -545,7 +547,7 @@
         console.warn("Could not query model list:", listErr);
       }
 
-      throw new Error("Could not connect to Gemini models. Check your API key and quotas in Google AI Studio.");
+      throw new Error("No Gemini models responded successfully. Please verify your Google AI Studio quota and API key.");
     }
 
     async function generateWithAI() {
@@ -558,24 +560,12 @@
       document.getElementById('ai-timeline').innerHTML = '';
       aiBtn.disabled = true;
 
-      const systemInstruction = `You are an API that outputs STRICT RAW JSON only. Do not wrap in markdown or backticks. Start directly with { and end with }.
-You are an expert Maharashtrian blog writer. Write a high-quality blog post in pure, natural Marathi.
-
-CRITICAL INSTRUCTIONS:
-1. STRICTLY NO MARKDOWN: Never use ** or * marks. You MUST use valid HTML tags like <strong>, <b>, <h3>, <p>.
-2. VECTORS & ICONS: Use FontAwesome v6 icons (<i class="fa-solid fa-circle-check" style="color:#10b981;"></i>) beside headings and inside lists.
-3. HIGHLIGHT BOX: Always start the "content" HTML with an attractive summary card:
-<div style='background-color:#fffbeb; padding:20px; border-left:6px solid #f59e0b; border-radius:12px; margin-bottom:25px; box-shadow:0 4px 15px rgba(0,0,0,0.05); font-size:1.1rem; color:#334155; line-height:1.8;'><strong style='color:#b45309; font-size:1.2rem; display:block; margin-bottom:12px;'><i class='fa-solid fa-bell fa-shake'></i> महत्त्वाची माहिती:</strong>[Engaging Marathi summary]</div>
-
-JSON FORMAT:
-{
-  "title": "Marathi Title",
-  "title_en": "English Title",
-  "excerpt": "Short 2 sentence Marathi summary",
-  "keywords": "marathi, keywords, tags",
-  "thumbnail_prompt": "English visual scene description for thumbnail image generation",
-  "content": "Full HTML content beginning with the highlight card"
-}`;
+      const systemInstruction = `You are an expert Marathi content creator. You must output ONLY a valid JSON object matching the requested schema.
+Rules:
+1. STRICTLY NO MARKDOWN inside content: Never use ** or * marks. Use HTML tags like <strong>, <b>, <h3>, <p>.
+2. Use FontAwesome icons (<i class="fa-solid fa-circle-check" style="color:#10b981;"></i>) in headings and list items.
+3. Start the "content" HTML field with a Marathi summary alert box using inline CSS.
+4. Output JSON keys exactly: "title", "title_en", "excerpt", "keywords", "thumbnail_prompt", "content".`;
 
       let resultObj = null;
 
@@ -583,7 +573,7 @@ JSON FORMAT:
         const geminiKey = await getSecret('GEMINI_API_KEY');
         if (!geminiKey) throw new Error("Google Gemini API Key is missing from database RPC.");
         
-        resultObj = await runGeminiRequest(geminiKey, systemInstruction, "Topic: " + prompt);
+        resultObj = await runGeminiRequest(geminiKey, systemInstruction, "Generate an article about: " + prompt, true);
         updateTimeline(null, 'success');
       } catch (err) {
         console.error(err);
@@ -595,11 +585,20 @@ JSON FORMAT:
 
       updateTimeline("Formatting & rendering your post...");
       try {
-        let cleanText = resultObj.text.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("Could not parse JSON structure from response.");
+        let raw = resultObj.text.trim();
         
-        const aiData = JSON.parse(jsonMatch[0]);
+        if (raw.startsWith("```")) {
+          raw = raw.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/i, '').trim();
+        }
+
+        const startIdx = raw.indexOf('{');
+        const endIdx = raw.lastIndexOf('}');
+        if (startIdx === -1 || endIdx === -1) {
+          throw new Error("No valid JSON object found in response.");
+        }
+        
+        const cleanJsonStr = raw.substring(startIdx, endIdx + 1);
+        const aiData = JSON.parse(cleanJsonStr);
 
         document.getElementById('p-title').value = aiData.title || '';
         document.getElementById('p-title-en').value = aiData.title_en || '';
@@ -618,12 +617,12 @@ JSON FORMAT:
           document.getElementById('ai-processing-overlay').style.display = 'none'; 
           showToast(`Generated successfully with ${resultObj.usedModel}!`);
           aiBtn.disabled = false;
-        }, 1000);
+        }, 800);
       } catch (parseErr) {
-        console.error("JSON Parsing Error:", parseErr);
-        updateTimeline("AI output formatting issue. Check console.", 'error');
+        console.error("JSON Parsing Error:", parseErr, "Raw output:", resultObj ? resultObj.text : null);
+        updateTimeline("Failed to parse JSON response. See console for details.", 'error');
         aiBtn.disabled = false;
-        setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3000);
+        setTimeout(() => { document.getElementById('ai-processing-overlay').style.display = 'none'; }, 3500);
       }
     }
 
@@ -643,7 +642,8 @@ JSON FORMAT:
         const geminiKey = await getSecret('GEMINI_API_KEY');
         const userText = "Instructions: " + refinePrompt + "\n\nHTML:\n" + currentContent;
         
-        let resultObj = await runGeminiRequest(geminiKey, systemInstruction, userText);
+        // Pass false for expectJson because we just want pure HTML back
+        let resultObj = await runGeminiRequest(geminiKey, systemInstruction, userText, false);
         let newHtml = resultObj.text.replace(/^```html/i, '').replace(/```$/i, '').trim();
         
         document.getElementById('p-content').value = newHtml;
