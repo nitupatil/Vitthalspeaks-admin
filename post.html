@@ -470,6 +470,10 @@
       // Gemini is always tried first. Groq remains untouched as the final
       // fallback only if every Gemini attempt fails.
       const modelsToTry = [
+        // Quality-first: Pro models are always attempted before Flash.
+        'gemini-3.1-pro-preview',
+        'gemini-2.5-pro',
+        // Faster Gemini fallbacks.
         'gemini-3.6-flash',
         'gemini-3.5-flash-lite'
       ];
@@ -585,24 +589,82 @@
       document.getElementById('ai-timeline').innerHTML = '';
       aiBtn.disabled = true;
 
-      const strictPrompt = `You are a strict data API. You MUST output ONLY a valid JSON object. 
-DO NOT output your thought process. DO NOT write conversational text. DO NOT write markdown outside the JSON.
+      const strictPrompt = `You are the primary editorial writer and visual HTML designer for Vitthal Speaks, a professional Marathi information website.
 
-Create a Marathi blog post about: "${topic}"
+TOPIC:
+"${topic}"
 
-Return exactly this JSON structure. Ensure all HTML inside the "content" string uses single quotes for attributes (e.g. style='color:red;') to prevent breaking the JSON:
+Create a complete, useful, accurate Marathi article for this topic.
+
+RETURN FORMAT:
+Return ONLY one valid JSON object. No Markdown fences. No explanation before or after the JSON.
+
 {
-  "title": "Marathi Title",
-  "title_en": "English Translation of Title",
-  "excerpt": "Short 2 sentence Marathi summary",
-  "keywords": "marathi, keywords, tags",
-  "thumbnail_prompt": "English visual scene description for thumbnail",
-  "content": "<div style='background-color:#fffbeb; padding:20px; border-left:6px solid #f59e0b; border-radius:12px; margin-bottom:25px;'><strong style='color:#b45309; font-size:1.2rem; display:block; margin-bottom:12px;'><i class='fa-solid fa-bell fa-shake'></i> महत्त्वाची माहिती:</strong> [Engaging Marathi summary] </div> <h3><i class='fa-solid fa-info-circle' style='color:#3b82f6;'></i> Introduction</h3> <p>Write detailed Marathi content here using standard HTML tags...</p>"
+  "title": "SEO-friendly Marathi title",
+  "title_en": "Short English title for slug generation",
+  "excerpt": "Attractive 1-2 sentence Marathi summary",
+  "keywords": "comma, separated, Marathi, SEO, keywords",
+  "thumbnail_prompt": "Detailed English visual prompt for the thumbnail",
+  "content": "Complete article HTML"
 }
 
-RULES FOR "content":
-1. Use HTML tags (<strong>, <b>, <h3>, <ul>, <li>, <p>). STRICTLY NO MARKDOWN (** or *).
-2. Use FontAwesome v6 icons (<i class='fa-solid fa-...'></i>) in headings and lists.`;
+CONTENT MUST BE:
+- Directly usable inside the existing Vitthal Speaks content textarea.
+- HTML only, NOT Markdown.
+- Article-body HTML only; do not include <html>, <head>, <body>, or JavaScript.
+- Written primarily in natural Marathi.
+- Professionally structured and visually attractive on desktop and mobile.
+- Detailed enough to genuinely answer the topic, without unnecessary repetition.
+
+DESIGN THE ARTICLE:
+1. Begin with a visually attractive introduction/summary card.
+2. Use clear <h2> and <h3> section hierarchy.
+3. Use responsive cards/sections for major information.
+4. Use an important-information box for key facts.
+5. Use warning/notice boxes for deadlines, eligibility, documents, money, rules, or common mistakes when relevant.
+6. For procedures, use numbered step cards.
+7. Use bullet lists for benefits, documents, features, or requirements.
+8. Use a responsive table when a table genuinely improves understanding.
+9. Include a FAQ section with 4-6 useful questions when appropriate.
+10. Finish with a concise useful conclusion/action section.
+
+VISUAL CSS:
+- Put one small <style> block at the beginning of the content.
+- Prefix every custom class with "vs-" so it cannot conflict with the site.
+- Include polished cards, borders, shadows, spacing, rounded corners and responsive behavior.
+- Add subtle lightweight animations such as fade-up/slide-in using @keyframes.
+- Add hover effects only where appropriate.
+- Keep animations professional and fast; do not make the page distracting.
+- Use Font Awesome v6 icons such as <i class='fa-solid fa-circle-info'></i> where useful.
+- Icons must support the text and must never be the only way information is communicated.
+- Do not rely on external CSS files.
+
+EXAMPLE STRUCTURE:
+<style>
+.vs-section{...}
+.vs-card{...}
+.vs-notice{...}
+.vs-step{...}
+.vs-table-wrap{...}
+.vs-faq{...}
+@keyframes vsFadeUp{...}
+</style>
+<section class='vs-section'>...</section>
+<div class='vs-notice'>...</div>
+<div class='vs-card'>...</div>
+
+CONTENT SAFETY/ACCURACY:
+- Never invent government scheme amounts, dates, eligibility criteria, statistics, URLs, phone numbers, office addresses or official claims.
+- Do not create fake sources, fake citations or fake testimonials.
+- If a fact is uncertain or not supplied by the topic, avoid making a specific unsupported claim.
+- Do not use excessive emoji.
+- Do not put JavaScript in the article.
+- Use single quotes for HTML attributes inside the JSON content string.
+- Escape any double quotes that genuinely occur inside the content string so the final response remains valid JSON.
+
+THUMBNAIL:
+Create an English thumbnail_prompt describing a premium realistic Indian/Maharashtrian visual relevant to the topic, cinematic lighting, strong composition, clear subject, clean space for title overlay, and no fake logos or unreadable text.`;
+
 
       let resultObj = null;
 
