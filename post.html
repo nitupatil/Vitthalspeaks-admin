@@ -154,6 +154,7 @@
             <input type="text" id="ai-prompt" class="ai-input" placeholder="e.g. Write a Marathi post about the MPSC exam updates 2026...">
           </div>
           <button id="btn-ai" class="btn-ai" onclick="generateWithAI()">✨ Generate Blog Content</button>
+          <div id="ai-provider-status" style="font-size:.78rem;color:#64748b;margin-top:8px;">Gemini is used first. Groq is used only if all Gemini attempts fail.</div>
 
           <!-- REFINEMENT BOX -->
           <div id="ai-refine-box" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #d8b4fe;">
@@ -375,141 +376,186 @@
     }
 
     // ==========================================
-    // GEMINI API HELPERS
+    // AI SETTINGS + GEMINI FIRST / GROQ LAST RESORT
     // ==========================================
-    // Gemini API-key authentication must use ?key=...
-    // Do NOT send the API key as an OAuth Bearer token.
-    async function fetchWithRetry(url, options = {}, retries = 3) {
+    let AI_SETTINGS_CACHE = null;
+
+    async function getAISettings(forceRefresh = false) {
+      if (AI_SETTINGS_CACHE && !forceRefresh) return AI_SETTINGS_CACHE;
+
+      const { data, error } = await db
+        .from('app_settings')
+        .select('key,value')
+        .in('key', ['GEMINI_API_KEY', 'GROQ_API_KEY']);
+
+      if (error) throw new Error('Could not load AI settings from app_settings: ' + error.message);
+
+      const settings = {};
+      (data || []).forEach(row => {
+        if (row.key && row.value) settings[row.key] = String(row.value).trim();
+      });
+
+      if (!settings.GEMINI_API_KEY) {
+        throw new Error('GEMINI_API_KEY was not found in the app_settings table.');
+      }
+
+      AI_SETTINGS_CACHE = settings;
+      return settings;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function readApiResponse(response) {
+      const text = await response.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch (_) {}
+      if (!response.ok) {
+        const message = data?.error?.message || text || `HTTP ${response.status}`;
+        const err = new Error(message);
+        err.status = response.status;
+        throw err;
+      }
+      return data;
+    }
+
+    async function callGemini(prompt, responseMimeType = 'text/plain') {
+      const settings = await getAISettings();
+      const key = settings.GEMINI_API_KEY;
+
+      // Gemini is always tried first. These are model fallbacks within Gemini only.
+      const models = [
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
+        'gemini-2.0-flash'
+      ];
       let lastError = null;
 
-      for (let attempt = 0; attempt < retries; attempt++) {
-        try {
-          const response = await fetch(url, {
-            ...options,
-            headers: {
-              'Content-Type': 'application/json',
-              ...(options.headers || {})
-            }
-          });
+      for (const model of models) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const response = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{ parts: [{ text: prompt }] }],
+                  generationConfig: {
+                    temperature: 0.7,
+                    responseMimeType
+                  }
+                })
+              }
+            );
 
-          if (response.ok) return response;
+            const data = await readApiResponse(response);
+            const text = data?.candidates?.[0]?.content?.parts
+              ?.map(part => part.text || '')
+              .join('')
+              .trim();
 
-          const errorText = await response.text();
+            if (!text) throw new Error(`Gemini ${model} returned an empty response.`);
+            return { text, model, provider: 'gemini' };
+          } catch (err) {
+            lastError = new Error(`Gemini ${model}: ${err.message}`);
+            console.warn(lastError.message);
 
-          if (response.status === 429 || response.status === 503) {
-            lastError = new Error(`Gemini is temporarily busy (${response.status}).`);
-            if (attempt < retries - 1) {
-              await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1)));
+            // Retry temporary/rate-limit errors, then move to the next Gemini model.
+            if (attempt === 0 && [408, 429, 500, 502, 503, 504].includes(err.status)) {
+              await sleep(1200);
               continue;
             }
+            break;
           }
-
-          let detail = errorText;
-          try {
-            const parsed = JSON.parse(errorText);
-            detail = parsed?.error?.message || errorText;
-          } catch (_) {}
-
-          throw new Error(`Gemini API ${response.status}: ${detail}`);
-        } catch (error) {
-          lastError = error;
-          if (attempt < retries - 1 && /Failed to fetch|network|busy|temporarily/i.test(error.message)) {
-            await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1)));
-            continue;
-          }
-          throw error;
         }
       }
 
-      throw lastError || new Error("Gemini request failed.");
-    }
-
-    function getGeminiText(data) {
-      const parts = data?.candidates?.[0]?.content?.parts;
-      if (!Array.isArray(parts)) {
-        const reason = data?.promptFeedback?.blockReason || data?.candidates?.[0]?.finishReason;
-        throw new Error(reason ? `Gemini did not return content. Reason: ${reason}` : "Gemini returned an empty response.");
+      // IMPORTANT: Groq is NEVER used until every Gemini model has failed.
+      if (!settings.GROQ_API_KEY) {
+        throw new Error('All Gemini attempts failed. GROQ_API_KEY is also missing, so no fallback is available. Last error: ' + lastError?.message);
       }
 
-      const text = parts
-        .map(part => typeof part.text === "string" ? part.text : "")
-        .join("")
-        .trim();
-
-      if (!text) throw new Error("Gemini returned empty text.");
-      return text;
+      console.warn('All Gemini attempts failed. Using Groq as the final fallback.', lastError);
+      return await callGroq(prompt);
     }
 
-    function cleanAiText(text) {
-      return String(text || "")
-        .replace(/^\uFEFF/, "")
-        .replace(/```json/gi, "")
-        .replace(/```html/gi, "")
-        .replace(/```/g, "")
-        .trim();
+    async function callGroq(prompt) {
+      const settings = await getAISettings();
+      const key = settings.GROQ_API_KEY;
+      if (!key) throw new Error('GROQ_API_KEY is missing.');
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          temperature: 0.7,
+          messages: [
+            { role: 'user', content: prompt }
+          ]
+        })
+      });
+
+      const data = await readApiResponse(response);
+      const text = data?.choices?.[0]?.message?.content?.trim();
+      if (!text) throw new Error('Groq returned an empty response.');
+      return { text, model: 'llama-3.3-70b-versatile', provider: 'groq' };
     }
 
-    function extractJsonObject(text) {
-      const cleaned = cleanAiText(text);
+    // Extract the first complete JSON object even if the AI adds code fences or explanation.
+    function extractJsonObject(raw) {
+      if (!raw) throw new Error('AI returned an empty response.');
 
-      // First try the complete response.
-      try {
-        return JSON.parse(cleaned);
-      } catch (_) {}
+      let text = String(raw)
+        .replace(/^\uFEFF/, '')
+        .replace(/```json/gi, '')
+        .replace(/```/g, '')
+        .trim();
 
-      // Then extract the first balanced JSON object.
-      const startIndex = cleaned.indexOf("{");
-      if (startIndex === -1) {
-        throw new Error("Gemini response did not contain a JSON object.");
-      }
+      try { return JSON.parse(text); } catch (_) {}
+
+      const first = text.indexOf('{');
+      if (first === -1) throw new Error('No JSON object found in AI response.');
 
       let depth = 0;
       let inString = false;
       let escaped = false;
 
-      for (let i = startIndex; i < cleaned.length; i++) {
-        const ch = cleaned[i];
-
+      for (let i = first; i < text.length; i++) {
+        const ch = text[i];
         if (inString) {
-          if (escaped) {
-            escaped = false;
-          } else if (ch === "\\") {
-            escaped = true;
-          } else if (ch === '"') {
-            inString = false;
-          }
+          if (escaped) escaped = false;
+          else if (ch === '\\') escaped = true;
+          else if (ch === '"') inString = false;
           continue;
         }
-
-        if (ch === '"') {
-          inString = true;
-        } else if (ch === "{") {
-          depth++;
-        } else if (ch === "}") {
+        if (ch === '"') { inString = true; continue; }
+        if (ch === '{') depth++;
+        if (ch === '}') {
           depth--;
           if (depth === 0) {
-            const candidate = cleaned.slice(startIndex, i + 1);
-            try {
-              return JSON.parse(candidate);
-            } catch (_) {
-              break;
+            const candidate = text.slice(first, i + 1);
+            try { return JSON.parse(candidate); } catch (e) {
+              throw new Error('AI returned JSON-like content, but it could not be parsed: ' + e.message);
             }
           }
         }
       }
-
-      throw new Error("Gemini returned text, but it was not valid JSON. Check the browser console for the raw response.");
+      throw new Error('Incomplete JSON object returned by AI.');
     }
 
-    function slugifyEnglishTitle(value) {
-      return String(value || "")
-        .normalize("NFKD")
-        .replace(/[^\x00-\x7F]/g, "")
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "")
-        .slice(0, 180);
+    function cleanGeneratedHtml(html) {
+      return String(html || '')
+        .replace(/^```html\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .replace(/<\/?(?:html|head|body)[^>]*>/gi, '')
+        .trim();
     }
 
     // ==========================================
@@ -518,120 +564,50 @@
     async function generateWithAI() {
       const prompt = document.getElementById('ai-prompt').value.trim();
       const aiBtn = document.getElementById('btn-ai');
-      const msg = document.getElementById('p-msg');
 
-      if (!prompt) {
-        alert("Please enter a topic for the AI to generate.");
-        return;
-      }
+      if (!prompt) return alert('Please enter a topic for the AI to generate.');
 
-      if (typeof GEMINI_API_KEY === 'undefined' || !String(GEMINI_API_KEY).trim()) {
-        alert("Error: GEMINI_API_KEY is missing in config.js.");
-        return;
-      }
-
-      aiBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+      aiBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating with Gemini...';
       aiBtn.disabled = true;
-      msg.style.color = "#7e22ce";
-      msg.innerText = "Gemini is generating your article...";
 
-      const systemInstruction = `
-You are an expert Marathi blog writer for "Vitthal Speaks".
-
-Create a high-quality, SEO-friendly Marathi article about this topic:
-${prompt}
-
-Return ONLY one valid JSON object with exactly these keys:
+      const systemInstruction = `You are an expert Marathi blog writer. Write a high-quality, SEO-optimized blog post in Marathi about: "${prompt}".
+IMPORTANT: Return ONLY one valid JSON object. No explanation, no notes, no markdown outside the JSON, and no code fence.
+Use exactly these keys:
 {
-  "title": "Catchy Marathi title",
-  "title_en": "English translation of title",
-  "excerpt": "Short 2-sentence Marathi summary",
-  "keywords": "comma separated Marathi SEO keywords",
-  "thumbnail_prompt": "Short English image-generation prompt",
-  "content": "Complete article body as raw HTML"
+  "title": "Catchy title in Marathi",
+  "title_en": "English translation of the title",
+  "excerpt": "A short 2-sentence summary in Marathi",
+  "keywords": "comma separated SEO keywords in Marathi",
+  "thumbnail_prompt": "Brief English visual description for a blog thumbnail",
+  "content": "Full Marathi blog body as raw HTML using h2, h3, p, ul, ol, li, strong and table when useful. Do not include html, head or body tags."
 }
-
-Rules for content:
-- content must contain only article-body HTML, never <html>, <head>, <body>, <script> or <style>.
-- Use <h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong>, <table>, <div> where useful.
-- Marathi text should be natural and readable.
-- Do not use Markdown.
-- Do not wrap the JSON in markdown code fences.
-- Use double quotes for JSON strings and correctly escape all internal double quotes.
-- Do not invent URLs.
-- Make the article useful and professionally structured.
-`;
+Do not invent government scheme dates, amounts, eligibility rules or legal claims. If the topic contains factual government information, phrase uncertain points carefully and avoid presenting unverified claims as official facts.`;
 
       try {
-        const endpoint =
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent` +
-          `?key=${encodeURIComponent(String(GEMINI_API_KEY).trim())}`;
+        const result = await callGemini(systemInstruction, 'application/json');
+        const aiData = extractJsonObject(result.text);
 
-        const response = await fetchWithRetry(endpoint, {
-          method: 'POST',
-          body: JSON.stringify({
-            systemInstruction: {
-              parts: [{ text: "Follow the user's requested JSON output format exactly." }]
-            },
-            contents: [{
-              role: "user",
-              parts: [{ text: systemInstruction }]
-            }],
-            generationConfig: {
-              temperature: 0.7,
-              responseMimeType: "application/json"
-            }
-          })
-        });
-
-        const data = await response.json();
-        if (data?.error) throw new Error(data.error.message || "Gemini returned an API error.");
-
-        const rawText = getGeminiText(data);
-        console.log("Gemini raw response:", rawText);
-
-        const aiData = extractJsonObject(rawText);
-
-        const title = String(aiData.title || "").trim();
-        const titleEn = String(aiData.title_en || "").trim();
-        const excerpt = String(aiData.excerpt || "").trim();
-        const keywords = String(aiData.keywords || "").trim();
-        const content = String(aiData.content || "").trim();
-
-        if (!title || !excerpt || !content) {
-          throw new Error("Gemini JSON is missing title, excerpt, or content.");
+        if (!aiData.title || !aiData.content) {
+          throw new Error('AI response is missing title or content.');
         }
 
-        // Put the generated values directly into the existing editor.
-        document.getElementById('p-title').value = title;
-        document.getElementById('p-title-en').value = titleEn;
-        document.getElementById('p-excerpt').value = excerpt;
-        document.getElementById('p-seo-keywords').value = keywords;
-        document.getElementById('p-content').value = content;
-
-        const generatedSlug = slugifyEnglishTitle(titleEn) || slugifyEnglishTitle(title) || `post-${Date.now()}`;
-        document.getElementById('p-slug').value = generatedSlug;
-
+        document.getElementById('p-title').value = aiData.title || '';
+        document.getElementById('p-title-en').value = aiData.title_en || '';
+        document.getElementById('p-excerpt').value = aiData.excerpt || '';
+        document.getElementById('p-seo-keywords').value = aiData.keywords || '';
+        document.getElementById('p-content').value = cleanGeneratedHtml(aiData.content);
+        document.getElementById('p-slug').value = (aiData.title_en || aiData.title || '')
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
         document.getElementById('p-status').value = 'draft';
-        document.getElementById('ai-thumb-prompt').value =
-          String(aiData.thumbnail_prompt || titleEn || title).trim();
+        document.getElementById('ai-thumb-prompt').value = aiData.thumbnail_prompt || aiData.title_en || aiData.title;
 
-        // Make the update visible immediately.
-        document.getElementById('p-content').dispatchEvent(new Event('input', { bubbles: true }));
-        document.getElementById('p-title').dispatchEvent(new Event('input', { bubbles: true }));
+        // Make the generated result immediately visible even before scrolling.
+        document.getElementById('p-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-        msg.style.color = "var(--success)";
-        msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> AI content generated and inserted into the editor. Review it, then click <b>Save Post to Database</b>.';
-
-        // Move the user to the generated content instead of leaving it hidden below the AI box.
-        document.getElementById('p-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        document.getElementById('p-content').focus();
-
+        alert(`Text Content generated successfully using ${result.provider === 'gemini' ? 'Gemini' : 'Groq fallback'} (${result.model}). You can now review and save the post.`);
       } catch (err) {
-        console.error("generateWithAI failed:", err);
-        msg.style.color = "var(--danger)";
-        msg.innerText = "AI generation failed: " + err.message;
-        alert("AI Generation failed.\n\n" + err.message);
+        console.error('AI Generation Error:', err);
+        alert('AI Generation failed.\n\n' + err.message);
       } finally {
         aiBtn.innerHTML = '✨ Generate Blog Content';
         aiBtn.disabled = false;
@@ -642,81 +618,27 @@ Rules for content:
       const refinePrompt = document.getElementById('ai-refine-prompt').value.trim();
       const currentContent = document.getElementById('p-content').value.trim();
       const refineBtn = document.getElementById('btn-ai-refine');
-      const msg = document.getElementById('p-msg');
 
-      if (!refinePrompt || !currentContent) {
-        alert("Please enter both current content and refinement instructions.");
-        return;
-      }
-
-      if (typeof GEMINI_API_KEY === 'undefined' || !String(GEMINI_API_KEY).trim()) {
-        alert("Error: GEMINI_API_KEY is missing in config.js.");
-        return;
-      }
+      if (!refinePrompt || !currentContent) return alert('Please enter both current content and refinement instructions.');
 
       refineBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
       refineBtn.disabled = true;
 
-      const instruction = `
-You are an expert Marathi HTML editor.
-
-Modify the following existing HTML according to this instruction:
-${refinePrompt}
-
-Existing HTML:
+      const systemInstruction = `You are an expert Marathi blog editor.
+User instruction: ${refinePrompt}
+Current HTML content:
 ${currentContent}
 
-Return ONLY the updated raw HTML.
-Do not use Markdown.
-Do not use code fences.
-Do not include html/head/body/script/style tags.
-`;
+Return ONLY the completely updated raw HTML. Do not use markdown or code fences. Keep the content in Marathi where appropriate. Do not add html, head or body tags. Preserve useful existing information unless the user specifically asks to remove it.`;
 
       try {
-        const endpoint =
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent` +
-          `?key=${encodeURIComponent(String(GEMINI_API_KEY).trim())}`;
-
-        const response = await fetchWithRetry(endpoint, {
-          method: 'POST',
-          body: JSON.stringify({
-            contents: [{
-              role: "user",
-              parts: [{ text: instruction }]
-            }],
-            generationConfig: {
-              temperature: 0.6,
-              responseMimeType: "text/plain"
-            }
-          })
-        });
-
-        const data = await response.json();
-        if (data?.error) throw new Error(data.error.message || "Gemini returned an API error.");
-
-        let newHtml = cleanAiText(getGeminiText(data));
-
-        // If Gemini accidentally returns a JSON wrapper, use its content field.
-        if (newHtml.startsWith("{")) {
-          try {
-            const parsed = JSON.parse(newHtml);
-            if (parsed.content) newHtml = String(parsed.content);
-          } catch (_) {}
-        }
-
-        if (!newHtml) throw new Error("Gemini returned empty HTML.");
-
-        document.getElementById('p-content').value = newHtml;
-        document.getElementById('p-content').dispatchEvent(new Event('input', { bubbles: true }));
+        const result = await callGemini(systemInstruction, 'text/plain');
+        document.getElementById('p-content').value = cleanGeneratedHtml(result.text);
         document.getElementById('ai-refine-prompt').value = '';
-
-        msg.style.color = "var(--success)";
-        msg.innerText = "Content refined successfully.";
+        document.getElementById('p-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
       } catch (err) {
-        console.error("refineWithAI failed:", err);
-        msg.style.color = "var(--danger)";
-        msg.innerText = "Refinement failed: " + err.message;
-        alert("Refinement failed.\n\n" + err.message);
+        console.error('AI Refinement Error:', err);
+        alert('Refinement failed.\n\n' + err.message);
       } finally {
         refineBtn.innerHTML = '✨ Apply Fix';
         refineBtn.disabled = false;
@@ -842,81 +764,47 @@ Do not include html/head/body/script/style tags.
     }
 
     async function savePost() {
-      const id = document.getElementById('edit-id').value.trim();
-      const title = document.getElementById('p-title').value.trim();
-      const content = document.getElementById('p-content').value.trim();
-      const excerpt = document.getElementById('p-excerpt').value.trim();
+      const id = document.getElementById('edit-id').value;
+      const title = document.getElementById('p-title').value;
+      const content = document.getElementById('p-content').value;
+      const excerpt = document.getElementById('p-excerpt').value;
       const status = document.getElementById('p-status').value;
       const msg = document.getElementById('p-msg');
 
-      if (!title || !content || !excerpt) {
-        alert("Title, Excerpt, and Content are strictly required.");
-        return;
-      }
-
+      if(!title || !content || !excerpt) return alert("Title, Excerpt, and Content are strictly required.");
       msg.style.color = "var(--primary)";
       msg.innerText = "Saving to database...";
 
-      const rawSlug =
-        document.getElementById('p-slug').value.trim() ||
-        document.getElementById('p-title-en').value.trim() ||
-        title;
+      let rawSlug = document.getElementById('p-slug').value || document.getElementById('p-title-en').value || title;
+      let slug = rawSlug.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '').toLowerCase() || 'post-'+Date.now();
 
-      const slug = slugifyEnglishTitle(rawSlug) || `post-${Date.now()}`;
-
-      const now = new Date().toISOString();
-
-      const payload = {
-        title,
-        title_en: document.getElementById('p-title-en').value.trim(),
-        category: document.getElementById('p-category').value.trim(),
-        slug,
-        excerpt,
-        content,
-        status,
-        seo_keywords: document.getElementById('p-seo-keywords').value.trim(),
-        featured_image: document.getElementById('p-media-url').value.trim(),
-        updated_at: now
+      const payload = { 
+        title, title_en: document.getElementById('p-title-en').value,
+        category: document.getElementById('p-category').value, slug, excerpt, content, status, 
+        seo_keywords: document.getElementById('p-seo-keywords').value,
+        featured_image: document.getElementById('p-media-url').value,
+        updated_at: new Date().toISOString() 
       };
 
-      try {
-        let error = null;
-
-        if (id) {
-          const existing = allPosts.find(p => String(p.id) === String(id));
-
-          if (status === 'published' && !existing?.published_at) {
-            payload.published_at = now;
-          }
-
-          ({ error } = await db.from('blogs').update(payload).eq('id', id));
-        } else {
-          payload.created_at = now;
-          payload.views = 0;
-
-          if (status === 'published') {
-            payload.published_at = now;
-          }
-
-          ({ error } = await db.from('blogs').insert([payload]));
+      let error;
+      if(id) { 
+        if(status === 'published') {
+           const existing = allPosts.find(p => p.id == id);
+           if(!existing.published_at) payload.published_at = new Date().toISOString();
         }
+        ({ error } = await db.from('blogs').update(payload).eq('id', id)); 
+      } 
+      else {
+        payload.created_at = new Date().toISOString();
+        if(status === 'published') payload.published_at = payload.created_at;
+        payload.views = 0;
+        ({ error } = await db.from('blogs').insert([payload]));
+      }
 
-        if (error) throw error;
-
-        msg.style.color = "var(--success)";
-        msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> Post saved successfully to Supabase.';
-
-        // Refresh the list without immediately destroying the editor.
-        await loadBlogs();
-
-        // Clear only when this was a new post.
-        if (!id) {
-          setTimeout(() => resetBlogForm(), 800);
-        }
-      } catch (error) {
-        console.error("savePost failed:", error);
-        msg.style.color = "var(--danger)";
-        msg.innerText = "Database save failed: " + (error?.message || error);
+      if(error) { msg.style.color = "red"; msg.innerText = error.message; }
+      else { 
+        msg.style.color = "green"; msg.innerText = "Successfully saved! GitHub will rebuild your website."; 
+        setTimeout(()=> { window.location.reload(); }, 2000);
       }
     }
 
